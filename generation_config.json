@@ -1,0 +1,23 @@
+{
+  "shoe": "dress",
+  "material": "gravel",
+  "emotion": "aggressive",
+  "long_wav_path": "/Users/etiennebost/AudioLDM2/audioldm2_slider_project/surface_dataset/turchet_reaper/dress/gravel/dress_gravel.wav",
+  "output_dir": "turchet_emotion_generated/dress/gravel/aggressive",
+  "n_output_clips": 300,
+  "clip_duration_s": 10.0,
+  "random_seed": 0,
+  "pre_peak_s": 0.08,
+  "post_peak_s": 0.65,
+  "target_mean_peak_dbfs": -7.0,
+  "target_std_peak_dbfs": 3.0,
+  "max_allowed_peak_dbfs": -1.0,
+  "turchet_values": {
+    "h2h_mean_ms": 691,
+    "h2h_se_ms": 47,
+    "pk_mean_db": 85.2,
+    "pk_se_db": 2.1,
+    "estimated_h2h_sd_ms": 210.19038988498025,
+    "estimated_pk_sd_db": 9.391485505499118
+  }
+}
