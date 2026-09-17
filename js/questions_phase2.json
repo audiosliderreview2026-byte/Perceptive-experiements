@@ -1,0 +1,14 @@
+[
+  {
+    "key": "Emotion_A",
+    "text": "Ce premier son vous paraît-il plutôt calme ou plutôt énervé ?",
+    "left": "Très calme",
+    "right": "Très énervé"
+  },
+  {
+    "key": "Emotion_B",
+    "text": "Ce deuxième son vous paraît-il plutôt calme ou plutôt énervé ?",
+    "left": "Très calme",
+    "right": "Très énervé"
+  }
+]

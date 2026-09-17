@@ -1,0 +1,26 @@
+[
+  {
+    "key": "audibilite_son",
+    "text": "Entendez-vous distinctement un son ?",
+    "left": "Pas du tout",
+    "right": "Très distinctement"
+  },
+  {
+    "key": "plausibilite",
+    "text": "Ce son vous semble-t-il réaliste ?",
+    "left": "Pas du tout réaliste",
+    "right": "Tout à fait réaliste"
+  },
+  {
+    "key": "integrite",
+    "text": "À quel point avez-vous remarqué des défauts sonores (grésillements, bruit de fond saccadé, échos métalliques, etc.) ?",
+    "left": "Aucun défaut",
+    "right": "Défauts très présents"
+  },
+  {
+    "key": "presence_pas",
+    "text": "Entendez-vous distinctement un bruit de pas ?",
+    "left": "Aucun bruit de pas",
+    "right": "Bruit de pas très clairement audible"
+  }
+]

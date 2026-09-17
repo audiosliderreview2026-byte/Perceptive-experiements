@@ -1,0 +1,14 @@
+[
+  {
+    "key": "Fidelite_pas",
+    "text": "À quel point le type de chaussure et la surface du sol ont-ils changé entre les deux extraits ?",
+    "left": "Identique",
+    "right": "Complètement différent"
+  },
+  {
+    "key": "Fidelite_environement",
+    "text": "À quel point l'acoustique de la pièce et le bruit de fond ont-ils changé ?",
+    "left": "Identique",
+    "right": "Complètement différent"
+  }
+]
