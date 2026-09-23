@@ -1,0 +1,14 @@
+[
+  {
+    "key": "Fidelite_pas",
+    "text": "To what extent did the type of footwear and the ground surface change ?",
+    "left": "Identical",
+    "right": "Completely different"
+  },
+  {
+    "key": "Fidelite_environement",
+    "text": "To what extent did the room acoustics and background noise change?",
+    "left": "Identical",
+    "right": "Completely different"
+  }
+]

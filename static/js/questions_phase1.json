@@ -1,0 +1,26 @@
+[
+  {
+    "key": "audibilite_son",
+    "text": "Can you clearly hear a sound?",
+    "left": "Not at all",
+    "right": "Very clearly"
+  },
+  {
+    "key": "plausibilite",
+    "text": "Does this sound seem realistic to you?",
+    "left": "Not at all realistic",
+    "right": "Completely realistic"
+  },
+  {
+    "key": "integrite",
+    "text": "To what extent did you notice audio artifacts (crackling, intermittent background noise, metallic echoes, etc.)?",
+    "left": "No artifacts",
+    "right": "Very noticeable artifacts"
+  },
+  {
+    "key": "presence_pas",
+    "text": "Can you clearly hear footsteps?",
+    "left": "No footsteps audible",
+    "right": "Footsteps very clearly audible"
+  }
+]

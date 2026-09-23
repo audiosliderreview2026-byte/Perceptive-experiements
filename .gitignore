@@ -1,0 +1,25 @@
+# Participant database
+db.sqlite
+*.sqlite-journal
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# macOS
+.DS_Store
+
+# Environment / secrets
+.env
+.venv/
+venv/
+
+# Logs
+*.log
+
+# Old / unused experiment assets
+assets/
+
+# Jupyter temporary files
+.ipynb_checkpoints/

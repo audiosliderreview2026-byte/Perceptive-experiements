@@ -1,0 +1,91 @@
+import os
+import wave
+import shutil
+from pathlib import Path
+from tkinter import Tk, filedialog
+
+def split_wav(src: Path, out_dir: Path) -> bool:
+    """
+    Découpe le fichier WAV en deux.
+    Retourne True si l'opération réussit, False sinon.
+    """
+    try:
+        with wave.open(str(src), 'rb') as w:
+            n_channels = w.getnchannels()
+            sampwidth  = w.getsampwidth()
+            framerate  = w.getframerate()
+            n_frames   = w.getnframes()
+            frames     = w.readframes(n_frames)
+
+        half = n_frames // 2
+        bytes_per_frame = n_channels * sampwidth
+
+        halves = {
+            '_d': frames[:half * bytes_per_frame],
+            '_f': frames[half * bytes_per_frame:],
+        }
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+        for suffix, data in halves.items():
+            dest = out_dir / (src.stem + suffix + src.suffix)
+            with wave.open(str(dest), 'wb') as w:
+                w.setnchannels(n_channels)
+                w.setsampwidth(sampwidth)
+                w.setframerate(framerate)
+                w.writeframes(data)
+            print(f"  → Créé : {dest.name}")
+        
+        return True # Succès
+            
+    except Exception as e:
+        print(f"❌ Erreur lors du traitement de {src.name} : {e}")
+        return False # Échec
+
+def main():
+    root = Tk()
+    root.withdraw()
+    root.attributes('-topmost', True)  # Force la boîte de dialogue au premier plan
+
+    print("Sélectionnez le dossier à traiter...")
+    input_dir_str = filedialog.askdirectory(title="Sélectionnez le dossier contenant les fichiers WAV")
+    
+    if not input_dir_str:
+        print("Opération annulée. Aucun dossier sélectionné.")
+        return
+
+    base_dir = Path(input_dir_str)
+    
+    backup_dir = base_dir.parent / f"{base_dir.name}_backup"
+    print(f"\nCréation d'une sauvegarde du dossier original vers :\n📁 {backup_dir}")
+    try:
+        shutil.copytree(base_dir, backup_dir, dirs_exist_ok=True)
+        print("✅ Sauvegarde terminée avec succès.\n")
+    except Exception as e:
+        print(f"❌ Erreur impossible de créer la sauvegarde : {e}")
+        print("Annulation du traitement pour protéger vos fichiers.")
+        return
+    
+    wav_files = list(base_dir.rglob("*.[wW][aA][vV]"))
+
+    if not wav_files:
+        print(f"Aucun fichier .wav trouvé dans {base_dir} ou ses sous-dossiers.")
+        return
+
+    print(f"Trouvé {len(wav_files)} fichier(s) à traiter.\n")
+
+    for src_path in wav_files:
+        print(f"Traitement de : {src_path.relative_to(base_dir)}")
+        
+        out_dir = src_path.parent
+        
+        if split_wav(src_path, out_dir):
+            try:
+                src_path.unlink()
+                print(f"  🗑️ Fichier original supprimé : {src_path.name}")
+            except Exception as e:
+                print(f"  ⚠️ Impossible de supprimer l'original {src_path.name} : {e}")
+
+    print("\n✅ Traitement terminé avec succès !")
+
+if __name__ == "__main__":
+    main()

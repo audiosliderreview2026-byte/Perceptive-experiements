@@ -1,0 +1,59 @@
+"step","phase","soundId","stimType","segment","alpha","soundType","rt","stimulus","trial_index","time_elapsed","audibilite_son","plausibilite","integrite","presence_pas"
+"ratings","1","04hSwZejH4o","prompt_angry","f","null","training","5264","<div class=""survey-wrap""><div class=""survey-item"">
+         <p class=""survey-question"">Can you clearly hear a sound?</p>
+         <div class=""slider-row"">
+           <span class=""slider-lbl lbl-left"">Not at all</span>
+           <input type=""range"" id=""q0"" class=""survey-slider"" min=""0"" max=""100"" value=""50"">
+           <span class=""slider-lbl lbl-right"">Very clearly</span>
+         </div>
+       </div><div class=""survey-item"">
+         <p class=""survey-question"">Does this sound seem realistic to you?</p>
+         <div class=""slider-row"">
+           <span class=""slider-lbl lbl-left"">Not at all realistic</span>
+           <input type=""range"" id=""q1"" class=""survey-slider"" min=""0"" max=""100"" value=""50"">
+           <span class=""slider-lbl lbl-right"">Completely realistic</span>
+         </div>
+       </div><div class=""survey-item"">
+         <p class=""survey-question"">To what extent did you notice audio artifacts (crackling, intermittent background noise, metallic echoes, etc.)?</p>
+         <div class=""slider-row"">
+           <span class=""slider-lbl lbl-left"">No artifacts</span>
+           <input type=""range"" id=""q2"" class=""survey-slider"" min=""0"" max=""100"" value=""50"">
+           <span class=""slider-lbl lbl-right"">Very noticeable artifacts</span>
+         </div>
+       </div><div class=""survey-item"">
+         <p class=""survey-question"">Can you clearly hear footsteps?</p>
+         <div class=""slider-row"">
+           <span class=""slider-lbl lbl-left"">No footsteps audible</span>
+           <input type=""range"" id=""q3"" class=""survey-slider"" min=""0"" max=""100"" value=""50"">
+           <span class=""slider-lbl lbl-right"">Footsteps very clearly audible</span>
+         </div>
+       </div></div>","6","120552","18","5","75","68"
+"ratings","1","hay_1","prompt_angry","d","null","testing","5497","<div class=""survey-wrap""><div class=""survey-item"">
+         <p class=""survey-question"">Can you clearly hear a sound?</p>
+         <div class=""slider-row"">
+           <span class=""slider-lbl lbl-left"">Not at all</span>
+           <input type=""range"" id=""q0"" class=""survey-slider"" min=""0"" max=""100"" value=""50"">
+           <span class=""slider-lbl lbl-right"">Very clearly</span>
+         </div>
+       </div><div class=""survey-item"">
+         <p class=""survey-question"">Does this sound seem realistic to you?</p>
+         <div class=""slider-row"">
+           <span class=""slider-lbl lbl-left"">Not at all realistic</span>
+           <input type=""range"" id=""q1"" class=""survey-slider"" min=""0"" max=""100"" value=""50"">
+           <span class=""slider-lbl lbl-right"">Completely realistic</span>
+         </div>
+       </div><div class=""survey-item"">
+         <p class=""survey-question"">To what extent did you notice audio artifacts (crackling, intermittent background noise, metallic echoes, etc.)?</p>
+         <div class=""slider-row"">
+           <span class=""slider-lbl lbl-left"">No artifacts</span>
+           <input type=""range"" id=""q2"" class=""survey-slider"" min=""0"" max=""100"" value=""50"">
+           <span class=""slider-lbl lbl-right"">Very noticeable artifacts</span>
+         </div>
+       </div><div class=""survey-item"">
+         <p class=""survey-question"">Can you clearly hear footsteps?</p>
+         <div class=""slider-row"">
+           <span class=""slider-lbl lbl-left"">No footsteps audible</span>
+           <input type=""range"" id=""q3"" class=""survey-slider"" min=""0"" max=""100"" value=""50"">
+           <span class=""slider-lbl lbl-right"">Footsteps very clearly audible</span>
+         </div>
+       </div></div>","8","132585","72","22","63","33"

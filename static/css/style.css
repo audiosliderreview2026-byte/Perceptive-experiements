@@ -1,0 +1,182 @@
+:root {
+  --blue:   #1e508c;
+  --light:  #f4f7fb;
+  --border: #d0daea;
+  --text:   #2c2c2c;
+  --muted:  #6b7280;
+}
+
+body { background: #eef2f7; }
+
+.jspsych-content { max-width: 760px !important; }
+
+/* ── Intro / break screens ── */
+.screen { text-align: left; padding: 10px 0; }
+.screen h2 { color: var(--blue); margin-top: 0; }
+.screen h3 { color: var(--blue); }
+.screen ul  { line-height: 1.9; }
+.screen .tag {
+  display: inline-block;
+  background: var(--blue);
+  color: #fff;
+  border-radius: 4px;
+  padding: 2px 10px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+/* ── Listen prompt ── */
+.listen-wrap { text-align: center; padding: 30px 0 20px; }
+.listen-wrap .sound-label {
+  font-size: 13px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.listen-wrap .sound-role {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--blue);
+}
+.listen-wrap .listen-hint {
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 14px;
+}
+
+/* ── Survey ── */
+.survey-wrap { padding: 4px 0 12px; }
+.survey-wrap h4 {
+  font-size: 15px;
+  color: var(--muted);
+  font-weight: 500;
+  margin: 0 0 16px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.survey-item {
+  background: var(--light);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 22px;
+  margin-bottom: 14px;
+}
+.survey-question {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 14px;
+}
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.slider-lbl {
+  font-size: 12.5px;
+  color: var(--muted);
+  width: 150px;
+  flex-shrink: 0;
+}
+.lbl-left  { text-align: right; }
+.lbl-right { text-align: left;  }
+.survey-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  height: 5px;
+  border-radius: 3px;
+  background: #c5d3e8;
+  outline: none;
+  cursor: pointer;
+}
+.survey-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--blue);
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,.25);
+}
+
+/* ── Phase / section tag ── */
+.screen-tag {
+  display: inline-block;
+  background: var(--blue);
+  color: #fff;
+  border-radius: 4px;
+  padding: 2px 10px;
+  font-size: 13px;
+  letter-spacing: .04em;
+  margin-bottom: 12px;
+}
+
+/* ── Phase 2 — A/B choice buttons ── */
+.p2-btn-group {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.p2-choice-btn {
+  padding: 10px 24px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color .15s, background .15s, color .15s;
+}
+.p2-choice-btn:hover {
+  border-color: var(--blue);
+  background: #eef4fb;
+}
+.p2-choice-btn.selected {
+  border-color: var(--blue);
+  background: var(--blue);
+  color: #fff;
+}
+
+/* ── Disabled submit state ── */
+.jspsych-btn.btn-disabled,
+.jspsych-btn:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+/* ── Landing page ── */
+.landing {
+  max-width: 640px;
+  margin: 60px auto;
+  padding: 0 20px;
+  text-align: left;
+}
+.landing h1 { color: var(--blue); }
+.landing-cards {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+.landing-card {
+  flex: 1;
+  min-width: 220px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 22px;
+  text-decoration: none;
+  color: var(--text);
+  display: block;
+  transition: border-color .15s, box-shadow .15s;
+}
+.landing-card:hover {
+  border-color: var(--blue);
+  box-shadow: 0 2px 10px rgba(30,80,140,.12);
+}
+.landing-card h3 { color: var(--blue); margin: 0 0 8px; }
+.landing-card p { margin: 0; color: var(--muted); font-size: 14px; }

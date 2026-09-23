@@ -1,0 +1,14 @@
+[
+  {
+    "key": "Emotion_A",
+    "text": "Does the first sound seem more calm or more agitated?",
+    "left": "Very calm",
+    "right": "Very agitated"
+  },
+  {
+    "key": "Emotion_B",
+    "text": "Does the second sound seem more calm or more agitated?",
+    "left": "Very calm",
+    "right": "Very agitated"
+  }
+]

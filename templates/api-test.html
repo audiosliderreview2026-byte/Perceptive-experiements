@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>API Test</title>
+</head>
+
+<body>
+
+  <h1>PythonAnywhere API Test</h1>
+
+  <button id="sendButton">
+    Send fake response
+  </button>
+
+  <pre id="output"></pre>
+
+
+  <script>
+
+    const API_URL =
+      "https://etiennebost.pythonanywhere.com/test";
+
+
+    document
+      .getElementById("sendButton")
+      .addEventListener("click", async () => {
+
+        const output = document.getElementById("output");
+
+        const fakeData = {
+          participant: "BROWSER_TEST",
+          phase: 99,
+          trial: 1,
+          sound_id: "browser_test_sound",
+          score: 87,
+          client_timestamp: new Date().toISOString()
+        };
+
+        output.textContent = "Sending...";
+
+        try {
+
+          const response = await fetch(API_URL, {
+
+            method: "POST",
+
+            headers: {
+              "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify(fakeData)
+
+          });
+
+
+          if (!response.ok) {
+            throw new Error(
+              `Server returned HTTP ${response.status}`
+            );
+          }
+
+
+          const result = await response.json();
+
+          output.textContent =
+            "SUCCESS\n\n" +
+            JSON.stringify(result, null, 2);
+
+        }
+
+        catch (error) {
+
+          output.textContent =
+            "ERROR\n\n" +
+            error.toString();
+
+          console.error(error);
+
+        }
+
+      });
+
+  </script>
+
+</body>
+
+</html>
