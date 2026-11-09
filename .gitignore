@@ -1,0 +1,11 @@
+db.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+__pycache__/
+*.pyc
+.venv/
+.env
+database_backups/
+research_results*.jsonl
+.DS_Store

@@ -1,0 +1,16 @@
+{
+  "/static/stimulis/training/phase2/01_reference.wav": "/static/stimulis/segments_5s/test_plugin_originals/gravel__first_0-5s.wav",
+  "/static/stimulis/training/phase2/01_edited.wav": "/static/stimulis/segments_5s/test_plugin_edits/gravel__edit_28__alpha_m1p830837__first_0-5s.wav",
+  "/static/stimulis/training/phase2/02_reference.wav": "/static/stimulis/segments_5s/test_plugin_originals/wood__first_0-5s.wav",
+  "/static/stimulis/training/phase2/02_edited.wav": "/static/stimulis/segments_5s/test_plugin_edits/wood__edit_24__alpha_m73p762776__first_0-5s.wav",
+  "/static/stimulis/training/phase2/03_reference.wav": "/static/stimulis/segments_5s/test_plugin_originals/heels_concrete__first_0-5s.wav",
+  "/static/stimulis/training/phase2/03_edited.wav": "/static/stimulis/segments_5s/test_plugin_edits/heels_concrete__edit_17__alpha_p6p800854__first_0-5s.wav",
+  "/static/stimulis/training/phase1/01_sound.wav": "/static/stimulis/training/phase2/01_reference.wav",
+  "/static/stimulis/training/phase1/02_sound.wav": "/static/stimulis/training/phase2/02_edited.wav",
+  "/static/stimulis/training/phase3/01_reference.wav": "/static/stimulis/segments_5s/test_plugin_originals/slow_trainer_wood_chunk_041__second_5-10s.wav",
+  "/static/stimulis/training/phase3/01_edited.wav": "/static/stimulis/segments_5s/test_plugin_edits/slow_trainer_wood_chunk_041__edit_23__alpha_p2p062249__second_5-10s.wav",
+  "/static/stimulis/training/phase3/02_reference.wav": "/static/stimulis/segments_5s/test_yt_originals_separated/forest_01_target__second_5-10s.wav",
+  "/static/stimulis/training/phase3/02_edited.wav": "/static/stimulis/segments_5s/test_yt_edits/forest_01_target__edit_25__alpha_p0p818172__second_5-10s.wav",
+  "/static/stimulis/training/phase3/03_reference.wav": "/static/stimulis/segments_5s/test_yt_originals/clip_10_10m03s__second_5-10s.wav",
+  "/static/stimulis/training/phase3/03_edited.wav": "/static/stimulis/segments_5s/yt_edit+residual/clip_10_10m03s_residual__edit_24__alpha_m0p574324__second_5-10s.wav"
+}

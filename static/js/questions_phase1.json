@@ -1,0 +1,24 @@
+[
+  {
+    "key": "audibilite_son",
+    "text": "Did you hear footsteps?",
+    "left": "No, I didn't hear anything at all",
+    "answer2": "No, I heard something, but there was no footsteps",
+    "answer3": "Yes, I heard a sound that contained footsteps"
+  },
+  {
+    "key": "plausibilite",
+    "text": "Whether the sound contained footsteps or not, how realistic was it? Could you have heard it in a real environment?",
+    "left": "Not realistic at all",
+    "right": "Extremely realistic"
+  },
+  {
+    "key": "integrite",
+    "text": "To what extent were there audio artifacts (crackling, intermittent background noise, metallic echoes, etc.)?",
+    "left": "No artifacts",
+    "right": "Very noticeable artifacts"
+  }
+
+
+
+]

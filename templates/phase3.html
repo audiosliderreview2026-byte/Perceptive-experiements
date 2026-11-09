@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Phase 3 — Identity Preservation</title>
+
+    <script src="https://unpkg.com/jspsych@8.2.3"></script>
+    <link
+      href="https://unpkg.com/jspsych@8.2.3/css/jspsych.css"
+      rel="stylesheet"
+    />
+
+    <script src="https://unpkg.com/@jspsych/plugin-preload@2.0.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-button-response@2.1.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-audio-button-response@2.1.1"></script>
+
+    <link
+      href="{{ url_for('static', filename='css/style.css') }}"
+      rel="stylesheet"
+    />
+  </head>
+
+<body data-prolific-id="{{ prolificID }}">
+
+  <script>
+    window.PROLIFIC_ID = document.body.dataset.prolificId;
+  </script>
+
+  <script src="{{ url_for('static', filename='js/common.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/phase3.js') }}"></script>
+
+</body>
+</html>

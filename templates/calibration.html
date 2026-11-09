@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Audio Setup</title>
+
+  <link
+    href="{{ url_for('static', filename='css/style.css') }}"
+    rel="stylesheet"
+  />
+
+  <style>
+    .calibration-wrap {
+      max-width: 700px;
+      margin: 80px auto;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .calibration-step {
+      margin-top: 30px;
+    }
+
+    .calibration-btn {
+      padding: 12px 22px;
+      margin: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .calibration-note {
+      margin: 25px 0;
+      line-height: 1.6;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .success {
+      color: #26734d;
+      font-weight: bold;
+    }
+
+    .warning {
+      color: #9a4f00;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="calibration-wrap">
+
+  <h1>Audio Setup</h1>
+
+  <p class="calibration-note">
+    This experiment involves careful listening to audio recordings.
+    Please complete this short audio check before beginning.
+  </p>
+
+  <p>
+    <strong>Please put on headphones or earphones now.</strong>
+  </p>
+
+
+  <!-- STEP 1 -->
+  <div id="step1" class="calibration-step">
+
+    <h2>1. Check your volume</h2>
+
+    <p>
+      Play the sound below and adjust your computer volume
+      until it is clearly audible and comfortable.
+    </p>
+
+    <audio id="testSound" controls>
+      <source src="{{ url_for('static', filename='audio/calibration/test_sound.wav') }}" type="audio/wav">
+    </audio>
+
+    <p>Can you hear the sound clearly?</p>
+
+    <button class="calibration-btn" onclick="audioOK()">
+      Yes
+    </button>
+
+    <button class="calibration-btn" onclick="audioNotOK()">
+      No
+    </button>
+
+    <p id="audioWarning" class="warning"></p>
+
+  </div>
+
+
+  <!-- STEP 2 -->
+  <div id="step2" class="calibration-step hidden">
+
+    <h2>2. Headphone check</h2>
+
+    <p>
+      You will now hear a short stereo sound.
+      Please keep your headphones on.
+    </p>
+
+    <p>
+      Where do you hear the sound?
+    </p>
+
+    <audio id="stereoSound" controls>
+      <source
+        src="{{ url_for('static', filename='stimulis/calibration/left.wav') }}"
+        type="audio/wav"
+      >
+    </audio>
+
+    <div>
+      <button class="calibration-btn" onclick="headphoneAnswer('left')">
+        Left
+      </button>
+
+      <button class="calibration-btn" onclick="headphoneAnswer('center')">
+        Center
+      </button>
+
+      <button class="calibration-btn" onclick="headphoneAnswer('right')">
+        Right
+      </button>
+    </div>
+
+    <p id="headphoneFeedback"></p>
+
+  </div>
+
+
+  <!-- SUCCESS -->
+  <div id="success" class="calibration-step hidden">
+
+    <h2 class="success">Audio setup complete ✓</h2>
+
+    <p>
+      Your audio setup is ready.
+      Please keep your headphones on throughout the experiment.
+    </p>
+
+    <button class="calibration-btn" onclick="startExperiment()">
+      Start experiment
+    </button>
+
+  </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/calibration.js') }}"></script>
+
+</body>
+</html>

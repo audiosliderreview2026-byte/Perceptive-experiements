@@ -1,0 +1,30 @@
+[
+  {
+    "key": "ground_type",
+    "text": "Did it sound to you like the footsteps in sound A and sound B were produced on the same type of ground (for example, concrete, gravel, leaves, etc.)?",
+    "left": "Yes, completely",
+    "middle": "I don't know",
+    "right": "Not at all"
+  },
+  {
+    "key": "shoe_type",
+    "text": "Did it sound to you like the footsteps in sound A and sound B were produced by the same type of shoes (for example, snearkers, boots, heels, etc.)?",
+    "left": "Yes, completely",
+    "middle": "I don't know",
+    "right": "Not at all"
+  },
+  {
+    "key": "walker_identity",
+    "text": "Did it sound to you like the footsteps in sound A and sound B were produced by the same person, possibly in a different emotional state?",
+    "left": "Yes, completely",
+    "middle": "I don't know",
+    "right": "Not at all"
+  },
+  {
+    "key": "environment",
+    "text": "Did it sound to you like the footsteps' background in sound A and sound B were similar (for example, same voices and ambient sounds at the same time, etc.)?",
+    "left": "Yes, completely",
+    "middle": "I don't know",
+    "right": "Not at all"
+  }
+]
