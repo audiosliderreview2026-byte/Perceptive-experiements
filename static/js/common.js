@@ -3168,307 +3168,23 @@ function buildRelativeEmotionTrial(
 
   const html = `
     <div class="survey-wrap">
-
       ${tag}
-
-      <div class="survey-item emotion-relative-question">
-
-        <p
-          class="survey-question"
-          style="
-            font-size:1.5rem;
-            font-weight:600;
-            line-height:1.35;
-            text-align:center;
-            margin-bottom:10px;
-          "
-        >
-          How do Sounds A and B relate to each other
-          on the emotional scale below?
-        </p>
-
-        <p
-          style="
-            text-align:center;
-            margin:8px auto 30px auto;
-            max-width:700px;
-            line-height:1.5;
-          "
-        >
-          Place each sound on the scale according to
-          how the <strong>footsteps feel</strong>.
-        </p>
-
-
-        <!-- Semantic endpoints -->
-
-        <div
-          style="
-            display:flex;
-            justify-content:space-between;
-            align-items:flex-end;
-            margin:0 3% 8px 3%;
-            gap:20px;
-          "
-        >
-
-          <div
-            style="
-              text-align:left;
-              line-height:1.35;
-            "
-          >
-            Calm
-            Tranquil
-            Relaxed
-          </div>
-
-          <div
-            style="
-              text-align:right;
-              line-height:1.35;
-            "
-          >
-            Angry
-            Aggressive
-            Furious
-          </div>
-
-        </div>
-
-
-        <!-- Shared scale -->
-
-        <div
-          id="emotion-scale-container"
-          style="
-            position:relative;
-            width:94%;
-            height:115px;
-            margin:0 auto 18px auto;
-          "
-        >
-
-          <!-- Horizontal scale line -->
-
-          <div
-            style="
-              position:absolute;
-              left:0;
-              right:0;
-              top:55px;
-              height:5px;
-              background:#b8b8b8;
-              border-radius:3px;
-            "
-          ></div>
-
-
-          <!-- Invisible range input for A -->
-
-          <input
-            id="emotion-slider-a"
-            type="range"
-            min="0"
-            max="100"
-            value="45"
-            style="
-              position:absolute;
-              left:0;
-              top:25px;
-              width:100%;
-              height:60px;
-              opacity:0;
-              cursor:pointer;
-              z-index:3;
-            "
-          >
-
-
-          <!-- Marker A -->
-
-          <div
-            id="emotion-marker-a"
-            style="
-              position:absolute;
-              left:45%;
-              top:34px;
-              transform:translateX(-50%);
-              width:42px;
-              height:42px;
-              border-radius:50%;
-              background:#3273dc;
-              color:white;
-              display:flex;
-              align-items:center;
-              justify-content:center;
-              font-weight:bold;
-              font-size:18px;
-              pointer-events:none;
-              z-index:5;
-              box-shadow:0 2px 5px rgba(0,0,0,.25);
-            "
-          >
-            A
-          </div>
-
-
-          <!-- Invisible range input for B -->
-
-          <input
-            id="emotion-slider-b"
-            type="range"
-            min="0"
-            max="100"
-            value="55"
-            style="
-              position:absolute;
-              left:0;
-              top:25px;
-              width:100%;
-              height:60px;
-              opacity:0;
-              cursor:pointer;
-              z-index:4;
-            "
-          >
-
-
-          <!-- Marker B -->
-
-          <div
-            id="emotion-marker-b"
-            style="
-              position:absolute;
-              left:55%;
-              top:34px;
-              transform:translateX(-50%);
-              width:42px;
-              height:42px;
-              border-radius:50%;
-              background:#d95f59;
-              color:white;
-              display:flex;
-              align-items:center;
-              justify-content:center;
-              font-weight:bold;
-              font-size:18px;
-              pointer-events:none;
-              z-index:5;
-              box-shadow:0 2px 5px rgba(0,0,0,.25);
-            "
-          >
-            B
-          </div>
-
-        </div>
-
-
-        <!-- Explicit controls -->
-
-        <div
-          style="
-            max-width:650px;
-            margin:20px auto 0 auto;
-          "
-        >
-
-          <div
-            style="
-              display:flex;
-              align-items:center;
-              gap:14px;
-              margin-bottom:16px;
-            "
-          >
-
-            <div
-              style="
-                width:34px;
-                height:34px;
-                flex:0 0 34px;
-                border-radius:50%;
-                background:#3273dc;
-                color:white;
-                display:flex;
-                align-items:center;
-                justify-content:center;
-                font-weight:bold;
-              "
-            >
-              A
-            </div>
-
-            <input
-              id="emotion-control-a"
-              type="range"
-              class="survey-slider"
-              min="0"
-              max="100"
-              value="45"
-              style="flex:1;"
-            >
-
-          </div>
-
-
-          <div
-            style="
-              display:flex;
-              align-items:center;
-              gap:14px;
-            "
-          >
-
-            <div
-              style="
-                width:34px;
-                height:34px;
-                flex:0 0 34px;
-                border-radius:50%;
-                background:#d95f59;
-                color:white;
-                display:flex;
-                align-items:center;
-                justify-content:center;
-                font-weight:bold;
-              "
-            >
-              B
-            </div>
-
-            <input
-              id="emotion-control-b"
-              type="range"
-              class="survey-slider"
-              min="0"
-              max="100"
-              value="55"
-              style="flex:1;"
-            >
-
-          </div>
-
-        </div>
-
-
-        <p
-          id="emotion-instruction"
-          style="
-            text-align:center;
-            margin-top:24px;
-            font-size:0.9em;
-            opacity:0.75;
-          "
-        >
-          Move both A and B before submitting your response.
-        </p>
-
+      <h2 style="font-size:1.5rem;line-height:1.4">How did sound A feel compared to sound B?</h2>
+      <p>Please place both sounds on the scale below, going from <strong>calm, relaxed, quiet</strong> to <strong>angry, aggressive, violent</strong>.</p>
+      <p><strong style="color:#3273dc">● Sound A (blue)</strong> &nbsp; <strong style="color:#d95f59">● Sound B (red)</strong></p>
+      <div style="display:flex;justify-content:space-between;gap:20px;margin-top:30px">
+        <strong>Calm, relaxed, quiet</strong><strong>Angry, aggressive, violent</strong>
       </div>
-
+      <div id="emotion-scale-container" style="position:relative;height:130px;margin:10px 24px;touch-action:none">
+        <div style="position:absolute;top:62px;left:0;right:0;height:5px;background:#b8b8b8;border-radius:3px"></div>
+        <div id="emotion-marker-a" role="slider" tabindex="0" aria-label="Sound A emotion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="45"
+          style="position:absolute;left:45%;top:16px;transform:translateX(-50%);width:44px;height:44px;border-radius:50%;background:#3273dc;color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:grab;touch-action:none;user-select:none">A</div>
+        <div id="emotion-marker-b" role="slider" tabindex="0" aria-label="Sound B emotion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="55"
+          style="position:absolute;left:55%;top:69px;transform:translateX(-50%);width:44px;height:44px;border-radius:50%;background:#d95f59;color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:grab;touch-action:none;user-select:none">B</div>
+      </div>
+      <p id="emotion-instruction">Drag both circles to position the sounds. You can also focus each circle and use the arrow keys. The circles may be placed at the same position.</p>
     </div>
   `;
-
 
   return {
 
@@ -3486,157 +3202,51 @@ function buildRelativeEmotionTrial(
       Object.assign(
         {
           step: 'ratings',
+          rating_format: 'shared_emotion_v1',
+          emotion_scale: { min: 0, max: 100, left: 'Calm, relaxed, quiet', right: 'Angry, aggressive, violent' },
         },
         data
       ),
 
 
     on_load() {
-
-      const sliderA =
-        document.getElementById(
-          'emotion-control-a'
-        );
-
-      const sliderB =
-        document.getElementById(
-          'emotion-control-b'
-        );
-
-      const markerA =
-        document.getElementById(
-          'emotion-marker-a'
-        );
-
-      const markerB =
-        document.getElementById(
-          'emotion-marker-b'
-        );
-
-      const submitBtn =
-        document.querySelector(
-          '.jspsych-btn'
-        );
-
-      const instruction =
-        document.getElementById(
-          'emotion-instruction'
-        );
-
-
-      // ----------------------------------------------------
-      // Submit remains disabled until BOTH markers moved.
-      // ----------------------------------------------------
-
-      const updateSubmitState = () => {
-
-        const ready =
-          touched.A &&
-          touched.B;
-
-
-        if (submitBtn) {
-
-          submitBtn.disabled =
-            !ready;
-
-          submitBtn.classList.toggle(
-            'btn-disabled',
-            !ready
-          );
-        }
-
-
-        if (
-          ready &&
-          instruction
-        ) {
-
-          instruction.textContent =
-            'Both sounds have been positioned.';
-        }
+      const scale = document.getElementById('emotion-scale-container');
+      const submit = document.querySelector('.jspsych-btn');
+      const instruction = document.getElementById('emotion-instruction');
+      const ready = () => {
+        submit.disabled = !(touched.A && touched.B);
+        if (!submit.disabled) instruction.textContent = 'Both sounds have been positioned. You may adjust them further or submit.';
       };
-
-
-      // ----------------------------------------------------
-      // Update visual marker positions
-      // ----------------------------------------------------
-
-      const updateMarkerA =
-        value => {
-
-          state.Emotion_A =
-            parseInt(value);
-
-          if (markerA) {
-
-            markerA.style.left =
-              `${state.Emotion_A}%`;
-          }
+      for (const role of ['A', 'B']) {
+        const marker = document.getElementById(`emotion-marker-${role.toLowerCase()}`);
+        const update = value => {
+          value = Math.max(0, Math.min(100, Math.round(value)));
+          if (value !== state[`Emotion_${role}`]) touched[role] = true;
+          state[`Emotion_${role}`] = value;
+          marker.style.left = `${value}%`;
+          marker.setAttribute('aria-valuenow', value);
+          ready();
         };
-
-
-      const updateMarkerB =
-        value => {
-
-          state.Emotion_B =
-            parseInt(value);
-
-          if (markerB) {
-
-            markerB.style.left =
-              `${state.Emotion_B}%`;
-          }
+        let dragging = false;
+        const move = event => {
+          const bounds = scale.getBoundingClientRect();
+          if (dragging && bounds.width) update((event.clientX - bounds.left) / bounds.width * 100);
         };
-
-
-      // ----------------------------------------------------
-      // A
-      // ----------------------------------------------------
-
-      if (sliderA) {
-
-        sliderA.addEventListener(
-          'input',
-          event => {
-
-            touched.A =
-              true;
-
-            updateMarkerA(
-              event.target.value
-            );
-
-            updateSubmitState();
-          }
-        );
+        marker.addEventListener('pointerdown', event => {
+          event.preventDefault(); marker.focus(); dragging = true;
+          marker.setPointerCapture(event.pointerId); move(event);
+        });
+        marker.addEventListener('pointermove', move);
+        marker.addEventListener('pointerup', event => { move(event); dragging = false; });
+        marker.addEventListener('pointercancel', () => { dragging = false; });
+        marker.addEventListener('keydown', event => {
+          const value = state[`Emotion_${role}`];
+          const next = { ArrowLeft:value-1, ArrowDown:value-1, ArrowRight:value+1,
+                         ArrowUp:value+1, Home:0, End:100 }[event.key];
+          if (next !== undefined) { event.preventDefault(); update(next); }
+        });
       }
-
-
-      // ----------------------------------------------------
-      // B
-      // ----------------------------------------------------
-
-      if (sliderB) {
-
-        sliderB.addEventListener(
-          'input',
-          event => {
-
-            touched.B =
-              true;
-
-            updateMarkerB(
-              event.target.value
-            );
-
-            updateSubmitState();
-          }
-        );
-      }
-
-
-      updateSubmitState();
+      ready();
     },
 
 
@@ -3648,10 +3258,10 @@ function buildRelativeEmotionTrial(
 
       jsPsych.data.addDataToLastTrial({
         Emotion_A:
-          state.Emotion_A,
+          trialData.ratings_skipped ? null : state.Emotion_A,
 
         Emotion_B:
-          state.Emotion_B,
+          trialData.ratings_skipped ? null : state.Emotion_B,
       });
 
 
@@ -3659,10 +3269,10 @@ function buildRelativeEmotionTrial(
         ...trialData,
 
         Emotion_A:
-          state.Emotion_A,
+          trialData.ratings_skipped ? null : state.Emotion_A,
 
         Emotion_B:
-          state.Emotion_B,
+          trialData.ratings_skipped ? null : state.Emotion_B,
       };
 
 
@@ -3890,7 +3500,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
     }
     timeline.push(...buildCalibrationTrials(completed));
     if (training.length) timeline.push({ type: jsPsychHtmlButtonResponse,
-      stimulus: `<div class="screen"><h2>How to respond</h2><p>Keep your headphones on and the calibrated volume unchanged. Each recording lasts five seconds and is played once. Listen to the full recording before answering.</p><p>${paired ? 'You will hear two recordings in sequence, labeled Sound A and Sound B. Indicate separately whether you heard each sound. If both were audible, answer the questions using the sliders.' : 'Indicate whether you heard nothing, something other than footsteps, or footsteps. If something was audible, answer the two questions using the sliders.'}</p><p>Use the full range of each slider when appropriate. There is no preferred answer to a subjective rating: give your own impression. If you heard nothing, say so rather than guessing.</p><p>You will now try three practice examples.</p></div>`,
+      stimulus: `<div class="screen"><h2>How to respond</h2><p>Keep your headphones on and the calibrated volume unchanged. Each recording lasts five seconds and is played once. Listen to the full recording before answering.</p><p>${paired ? (phase === 'phase2' ? 'You will hear Sound A followed by Sound B. Indicate separately whether each was audible. If both were audible, place blue A and red B on the same scale by dragging each circle. Both circles may have the same position.' : 'You will hear two recordings in sequence, labeled Sound A and Sound B. Indicate separately whether you heard each sound. If both were audible, answer the questions using the sliders.') : 'Indicate whether you heard nothing, something other than footsteps, or footsteps. If something was audible, answer the two questions using the sliders.'}</p><p>Use the full range of each slider when appropriate. There is no preferred answer to a subjective rating: give your own impression. If you heard nothing, say so rather than guessing.</p><p>You will now try three practice examples.</p></div>`,
       choices: ['Start practice'] });
     timeline.push(...training.flatMap(trial => buildTrial(trial, questions, true)));
     if (training.length) timeline.push({ type: jsPsychHtmlButtonResponse,
@@ -3936,7 +3546,9 @@ function buildSurveyTrial(jsPsych, questions, options = {}) {
   const phase = window.EXPERIMENT_PHASE;
   const single = phase === 'phase1';
   const sliderQuestions = single ? questions.slice(1) : questions;
-  const slider = buildSliderSurveyTrial(jsPsych, sliderQuestions, options);
+  const slider = phase === 'phase2'
+    ? buildRelativeEmotionTrial(jsPsych, options)
+    : buildSliderSurveyTrial(jsPsych, sliderQuestions, options);
   const heard = {};
   const audibilityData = () => single
     ? { audibilite_son: heard.single, heard_sound: heard.single !== 0 }

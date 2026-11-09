@@ -32,6 +32,7 @@ function buildTrial(pair, questions, isTraining = false) {
     data     : Object.assign({ step: 'listenB' }, baseData),
   });
 
+  // Shared A/B emotion scale, preceded by the common audibility checks.
   const surveyTrial = buildSurveyTrial(jsPsych, questions, { data: baseData, isTraining });
 
   return [listenA, listenB, surveyTrial];
