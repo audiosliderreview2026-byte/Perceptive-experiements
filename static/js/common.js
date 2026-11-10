@@ -1305,8 +1305,8 @@ function renderStudyCompletion(target) {
               <p>
                 Your responses have been saved.
               </p>
-              ${completionLink ? `<p>Click here to validate your participation to this study with prolific</p>
-              <p><a class="jspsych-btn" href="${completionLink}">Validate my participation on Prolific</a></p>` : ''}
+              ${completionLink ? `<p><strong>Click here</strong> to validate your participation to this study with prolific</p>
+              <p><a class="jspsych-btn" href="${completionLink}">validate</a></p>` : ''}
             </div>
           `;
 }
@@ -2739,7 +2739,7 @@ function buildFinalFeedback(phase) {
       <div id="volume-reason-field" hidden><label for="volume-reason">Please explain briefly what happened.</label><textarea id="volume-reason" maxlength="4000" rows="3"></textarea></div>
       <label for="general-feedback">General feedback (optional)</label><p>Anything you think might be helpful for us to know?</p>
       <textarea id="general-feedback" maxlength="10000" rows="4"></textarea>
-      <button type="submit" class="jspsych-btn">Submit and finish</button></form></div>`,
+      <button type="submit" class="jspsych-btn">Submit</button></form></div>`,
     data: { step: 'feedback', phase, questionnaire_version: '2026-11-10' },
     on_load() {
       setStudyStage('Feedback');
