@@ -2644,7 +2644,7 @@ function buildPhaseOneSurvey(jsPsych, questions, options) {
   const originalFinish = trial.on_finish;
   let answer = null;
   const moved = new Set();
-  trial.stimulus = `<div class="survey-wrap phase-one-survey"><fieldset class="audibility-options"><legend>Did you hear footsteps?</legend>${[questions[0].left, questions[0].answer2, questions[0].answer3].map((label, index) => `<label><input type="radio" name="heard" value="${index}"> ${label}</label>`).join('')}</fieldset><div id="phase-one-ratings">${trial.stimulus}</div><p id="rating-help" role="status">Select an answer and move both sliders before submitting.</p></div>`;
+  trial.stimulus = `<div class="survey-wrap phase-one-survey"><fieldset class="audibility-options"><legend>Did you hear footsteps?</legend>${[questions[0].left, questions[0].answer2, questions[0].answer3].map((label, index) => `<label><input type="radio" name="heard" value="${index}"> ${label}</label>`).join('')}</fieldset><div id="phase-one-ratings">${trial.stimulus}</div><p id="rating-help" role="status"></p></div>`;
   trial.on_load = () => {
     originalLoad(); answer = null; moved.clear();
     const submit = document.querySelector('#jspsych-html-button-response-btngroup button');
@@ -2675,7 +2675,7 @@ function buildFinalFeedback(phase) {
       <label><input type="radio" name="volume_changed" value="yes" required> Yes</label>
       <label><input type="radio" name="volume_changed" value="no" required> No</label></fieldset>
       <div id="volume-reason-field" hidden><label for="volume-reason">Please explain briefly why.</label><textarea id="volume-reason" maxlength="4000" rows="3"></textarea></div>
-      <label for="general-feedback">General feedback (optional)</label><p>Anything you want to tell us that could be useful to us.</p>
+      <label for="general-feedback">General feedback (optional)</label><p>Anything you think might be helpful for us to know?</p>
       <textarea id="general-feedback" maxlength="10000" rows="4"></textarea>
       <button type="submit" class="jspsych-btn">Submit and finish</button></form></div>`,
     data: { step: 'feedback', phase, questionnaire_version: '2026-11-10' },
