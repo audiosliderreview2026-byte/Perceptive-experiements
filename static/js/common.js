@@ -1440,7 +1440,7 @@ function buildCalibrationTrials(completedKeys = new Set()) {
     stimulus: `<div class="screen"><h2>Audio Calibration</h2>
       <p>As a reminder, you should wear <strong>headphones or earphones</strong> and be in a <strong>quiet environment</strong>.</p>
       <p>Listen to all four sounds below. Use your device volume control to find a <strong>comfortable listening level</strong> for all four.</p>
-      <p>The sounds should be clearly audible without feeling too loud. Choose a level that stays comfortable for all four recordings. You may replay these sounds while adjusting your volume.</p>
+      <p>While most sounds in the study feel nice or neutral, sound 2 and 3 may feel a little unpleasant. We included them here to make sure you select a sound level at which they do not sound too uncomfortable. At the same time, make sure that sound 4, which is quieter, remains clearly audible at the selected sound level. You may replay these sounds while adjusting your volume.</p>
       <div class="calibration-samples">${CALIBRATION_AUDIO.map((path, i) => `<button type="button" class="jspsych-btn calibration-sample" data-index="${i}">▶ Play sound ${i + 1}</button>`).join('')}</div>
       <p id="calibration-play-status" role="status">Listen to each sound before answering.</p>
       <p><strong>How would you describe the current volume?</strong></p></div>`,
