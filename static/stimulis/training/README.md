@@ -6,7 +6,7 @@ Replace the WAVs in phase1/, phase2/ or phase3/ to change examples without chang
 
 Changes to phase2 audio do not automatically update the independent phase1 copies. Copy the desired sound across if both should change. Use a fresh test Prolific ID after changing training assets, because completed training trials are resumed by index. No trial-order notebook regeneration is required. Training examples currently reuse experimental source recordings; they are marked training and excluded from experimental ratings.
 
-Phase 1 example 4 (`phase1/04_artefacts.wav`) is a temporary isolated YouTube edit, alpha −0.643934, selected once using seed 20261110. Replace it with your chosen five-second example with audible artefacts; its perceptual suitability has not been confirmed. Update its metadata in manifest.json and provenance in sources.json when replacing it.
+Phase 1 example 4 (`phase1/04_sound.wav`) is the second main-study sound saved for KT (user 19), phase 1, trialIndex 1: `test_yt_originals/clip_07_6m10s__first_0-5s.wav`. It is an unedited original, with no alpha value. Retrieved from results_snapshot.sqlite.
 
 Volume calibration uses pink noise and two fixed edits: `../calibration/extreme_positive.wav` (alpha +41.685126) and `../calibration/extreme_negative.wav` (alpha −32.460260). Their source paths are recorded in `../calibration/sources.json`. The right-ear check in `../calibration/right.wav` swaps the channels of left.wav.
 

@@ -114,7 +114,7 @@ def save_trial():
         }), 400
 
     try:
-        participant = persistence.assign(data['prolificID'])
+        participant = persistence.assign(data['prolificID'], data.get('phase'))
         if str(data.get('payload', {}).get('userID')) != participant['userID']:
             return jsonify(error='USER ID does not match database assignment'), 409
     except ValueError as exc:
@@ -207,7 +207,7 @@ def create_session():
             "error": "prolificID, phase and trial_order are required"
         }), 400
 
-    participant = persistence.assign(prolific_id)
+    participant = persistence.assign(prolific_id, phase)
     if str(trial_order.get('userID')) != participant['userID']:
         return jsonify(error='Plan does not match database USER ID'), 409
     session = model.create_phase_session(
@@ -340,7 +340,7 @@ def assigned_trial_order():
 @app.post('/api/participant')
 def register_participant():
     try:
-        return jsonify(persistence.assign((request.get_json() or {}).get('prolificID')))
+        return jsonify(persistence.assign((request.get_json() or {}).get('prolificID'), (request.get_json() or {}).get('phase')))
     except ValueError as exc:
         return jsonify(error=str(exc)),409
 

@@ -36,3 +36,26 @@ At the end of each phase, `feedback|final` is saved in `trial_data` under sectio
 Volume calibration records all three sample paths. Headphone checks record the actual left/right stimulus and correct answer; the first ear is randomized, and failed attempts alternate ears without announcing the next side.
 
 Phases 2 and 3 use combined audibility/rating forms. Both A/B audibility answers are required; either inaudible answer hides ratings and saves nulls. Audible pairs require both emotion circles (phase 2) or all four sliders (phase 3) to move. Their practice explanations and endpoints follow the questionnaire JSONs. Calibration examples 2/3 are fixed edits with |alpha| > 30; see calibration/sources.json for provenance.
+
+Prolific URL parameters `STUDY_ID` and `SESSION_ID` are saved in response/event payloads and exported as top-level JSONL fields. They are also recorded in a `participant_context` event immediately after registration. Missing parameters are null; existing historical records remain null. The analysis notebook exposes them as `answer.STUDY_ID` and `answer.SESSION_ID` in flattened completed responses. These parameters do not choose a phase or change participant assignment; the phase remains determined by the URL path. No schema migration is required.
+
+
+## Phase-specific assignments and validity
+
+The current allocator supersedes the earlier global USER ID policy. `phase_assignments` has one row per `(prolific_id, phase)`, with `user_id` and binary `valid` (default 1). Only valid rows must have unique `(phase, user_id)`. Existing started-phase IDs are migrated from sessions/results, retaining historical plans and answers. A global legacy participants.user_id is retained for compatibility but is no longer used to allocate or analyze new assignments. Do not renumber historical sessions.
+
+Each new participant in a phase receives the lowest invalid slot that has not already been reassigned to a valid participant, otherwise the lowest unused ID (1–512). Allocation is serialized in SQLite. Returning participants keep their existing phase assignment, even when marked invalid; their responses never overwrite another participant's records. Invalidating a participant does not automatically reject a Prolific submission. Revalidating an old assignment fails if its slot has already been reused.
+
+Before deploying this schema change, make a consistent SQLite backup with Python's sqlite3.Connection.backup, then deploy Python and JS together and reload the Web app. Migration runs automatically at application startup, in a transaction. Previously loaded tabs should reload to use phase-aware registration.
+
+On PythonAnywhere, mark one participant's phase invalid with:
+
+```bash
+cd ~/Perceptive-experiements
+workon perceptual-exp
+python set_assignment_validity.py --prolific-id PARTICIPANT_ID --phase phase1 --invalid
+```
+
+Use `--valid` instead to restore validity if the slot is still available. The binary field can also be edited in SQLite; the unique valid-slot index prevents two valid occupants. Do not mark every row with the same user_id invalid: identify both participant and phase.
+
+JSONL exports contain the current assignment validity as `valid`, while retaining all historical records. The inspection notebook joins assignments on participant AND phase. Invalid records remain available for analysis and may be filtered explicitly. After reuse, user_id alone is not a unique participant key; group on prolific_id and phase.

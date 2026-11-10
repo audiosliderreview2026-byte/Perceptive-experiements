@@ -9,6 +9,7 @@ import model
 
 def migrate():
     with model.get_connection() as conn:
+        conn.execute('BEGIN IMMEDIATE')
         if 'user_id' not in {r[1] for r in conn.execute('PRAGMA table_info(participants)')}:
             conn.execute('ALTER TABLE participants ADD COLUMN user_id INTEGER')
         conn.execute('CREATE UNIQUE INDEX IF NOT EXISTS unique_participant_user ON participants(user_id)')
@@ -19,26 +20,73 @@ def migrate():
             stimuli TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)''')
         conn.execute('CREATE INDEX IF NOT EXISTS events_participant ON research_events(prolific_id,phase)')
 
+        new_assignments = not conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='phase_assignments'").fetchone()
+        conn.execute('''CREATE TABLE IF NOT EXISTS phase_assignments (
+            prolific_id TEXT NOT NULL REFERENCES participants(prolific_id),
+            phase TEXT NOT NULL CHECK(phase IN ('phase1','phase2','phase3')),
+            user_id INTEGER NOT NULL CHECK(user_id BETWEEN 1 AND 512),
+            valid INTEGER NOT NULL DEFAULT 1 CHECK(valid IN (0,1)),
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY(prolific_id,phase))''')
+        conn.execute('CREATE UNIQUE INDEX IF NOT EXISTS valid_phase_slot ON phase_assignments(phase,user_id) WHERE valid=1')
+        if new_assignments:
+            # Preserve only phases actually started; unused phases start allocating at 1.
+            assignments = {}
+            for row in conn.execute('SELECT prolific_id,phase,trial_order FROM phase_sessions'):
+                assignments[(row[0], row[1])] = int(json.loads(row[2])['userID'])
+            for table in ('trial_data', 'research_events'):
+                fallback = 'user_id' if table == 'research_events' else 'NULL'
+                for row in conn.execute(f'SELECT prolific_id,phase,payload,{fallback} FROM {table}'):
+                    key = (row[0], row[1]); value = json.loads(row[2]).get('userID', row[3])
+                    if value is not None:
+                        value = int(value)
+                        if key in assignments and assignments[key] != value:
+                            raise ValueError(f'Conflicting historical USER IDs for {key}; review before migration')
+                        assignments[key] = value
+            for (pid, phase), user in assignments.items():
+                conn.execute('INSERT INTO phase_assignments(prolific_id,phase,user_id) VALUES (?,?,?)', (pid,phase,user))
 
-def assign(prolific_id):
+
+def assign(prolific_id, phase='phase1'):
     if not isinstance(prolific_id,str) or not prolific_id.strip():
         raise ValueError('A non-empty prolificID is required')
+    if phase not in ('phase1','phase2','phase3'):
+        raise ValueError('A valid phase is required')
     prolific_id=prolific_id.strip()
     with model.get_connection() as conn:
-        conn.execute('BEGIN IMMEDIATE')  # serialize allocation across tabs/processes
+        conn.execute('BEGIN IMMEDIATE')
         conn.execute('INSERT OR IGNORE INTO participants(prolific_id) VALUES (?)',(prolific_id,))
-        row=conn.execute('SELECT user_id FROM participants WHERE prolific_id=?',(prolific_id,)).fetchone()
-        user=row['user_id']
-        if user is None:
-            used={r[0] for r in conn.execute('SELECT user_id FROM participants WHERE user_id IS NOT NULL')}
-            # Preserve an existing assignment where it is unambiguous and still available.
-            legacy={str(json.loads(r[0]).get('userID','')) for r in conn.execute('SELECT trial_order FROM phase_sessions WHERE prolific_id=?',(prolific_id,))}
-            legacy={int(x) for x in legacy if x.isdecimal() and 1<=int(x)<=512}
-            user=next(iter(legacy)) if len(legacy)==1 and not legacy.intersection(used) else next((i for i in range(1,513) if i not in used),None)
-            if user is None: raise ValueError('All 512 USER IDs are assigned; generate more orders before recruiting more participants.')
-            conn.execute('UPDATE participants SET user_id=? WHERE prolific_id=?',(user,prolific_id))
+        row=conn.execute('SELECT user_id,valid FROM phase_assignments WHERE prolific_id=? AND phase=?',(prolific_id,phase)).fetchone()
+        if row:
+            user, valid = row['user_id'], row['valid']
+        else:
+            used={r[0] for r in conn.execute('SELECT user_id FROM phase_assignments WHERE phase=? AND valid=1',(phase,))}
+            invalid={r[0] for r in conn.execute('SELECT user_id FROM phase_assignments WHERE phase=? AND valid=0',(phase,))}
+            legacy=conn.execute('SELECT trial_order FROM phase_sessions WHERE prolific_id=? AND phase=?',(prolific_id,phase)).fetchone()
+            if legacy:
+                user=int(json.loads(legacy[0])['userID'])
+                if user in used: raise ValueError('Historical phase assignment is occupied; review before resuming')
+            else:
+                user=next(iter(sorted(invalid-used)),None)
+                if user is None: user=next((i for i in range(1,513) if i not in used),None)
+            if user is None: raise ValueError('All 512 USER IDs for this phase are assigned')
+            valid=1
+            conn.execute('INSERT INTO phase_assignments(prolific_id,phase,user_id,valid) VALUES (?,?,?,1)',(prolific_id,phase,user))
         conn.execute('UPDATE participants SET last_seen_at=CURRENT_TIMESTAMP WHERE prolific_id=?',(prolific_id,))
-    return {'prolificID':prolific_id,'userID':str(user)}
+    return {'prolificID':prolific_id,'phase':phase,'userID':str(user),'valid':bool(valid)}
+
+
+def set_validity(prolific_id, phase, valid):
+    if phase not in ('phase1','phase2','phase3'): raise ValueError('Invalid phase')
+    with model.get_connection() as conn:
+        conn.execute('BEGIN IMMEDIATE')
+        row=conn.execute('SELECT user_id FROM phase_assignments WHERE prolific_id=? AND phase=?',(prolific_id,phase)).fetchone()
+        if row is None: raise ValueError('No assignment found for this participant and phase')
+        try:
+            conn.execute('UPDATE phase_assignments SET valid=? WHERE prolific_id=? AND phase=?',(int(bool(valid)),prolific_id,phase))
+        except sqlite3.IntegrityError as exc:
+            raise ValueError('This USER ID has already been reassigned in this phase; cannot mark both assignments valid') from exc
+    return {'prolificID':prolific_id,'phase':phase,'userID':str(row[0]),'valid':bool(valid)}
 
 
 def describe_sound(path, role=None):
@@ -77,7 +125,7 @@ def stimuli(payload):
 
 
 def save_event(data):
-    participant=assign(data.get('prolificID'))
+    participant=assign(data.get('prolificID'), data.get('phase'))
     if str(data.get('userID'))!=participant['userID']:raise ValueError('USER ID does not match database assignment')
     if data.get('phase') not in ('phase1','phase2','phase3'):raise ValueError('Invalid phase')
     uuid.UUID(data['event_id'])

@@ -716,7 +716,7 @@ async function saveTrialToServer({
     section    : section,
     sound_id   : soundId,
     training   : training,
-    payload    : { ...payload, userID: window.ASSIGNED_USER_ID },
+    payload    : { ...payload, ...prolificStudyMetadata(), userID: window.ASSIGNED_USER_ID },
   };
 
   console.log(
@@ -1315,7 +1315,7 @@ function makeJsPsych(
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ event_id: crypto.randomUUID(),
             prolificID: window.PROLIFIC_ID, userID: window.ASSIGNED_USER_ID,
-            phase: window.EXPERIMENT_PHASE, client_time: new Date().toISOString(), payload: data }),
+            phase: window.EXPERIMENT_PHASE, client_time: new Date().toISOString(), payload: { ...data, ...prolificStudyMetadata() } }),
         }).catch(showSavingStatus);
       },
       async on_finish() {
@@ -2352,6 +2352,12 @@ function showExperimentLoadingError(error) {
   document.body.replaceChildren(panel);
 }
 
+function prolificStudyMetadata() {
+  const params = new URLSearchParams(window.location.search);
+  return { STUDY_ID: params.get('STUDY_ID') || null,
+    SESSION_ID: params.get('SESSION_ID') || null };
+}
+
 async function runAssignedExperiment(jsPsych, phase, buildTrial) {
   try {
     const params = new URLSearchParams(window.location.search);
@@ -2365,7 +2371,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
     }
     const registration = await fetch('/api/participant', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prolificID: window.PROLIFIC_ID }),
+      body: JSON.stringify({ prolificID: window.PROLIFIC_ID, phase }),
     });
     const participant = await registration.json();
     if (!registration.ok) throw new Error(participant.error || 'Participant registration failed');
@@ -2374,6 +2380,14 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
     const locationURL = new URL(window.location.href);
     locationURL.searchParams.set('userID', userID);
     window.history.replaceState(null, '', locationURL);
+    // Record URL identifiers immediately, even if no question is completed.
+    await durableStudyPost('/api/event', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event_id: crypto.randomUUID(),
+        prolificID: window.PROLIFIC_ID, userID, phase,
+        client_time: new Date().toISOString(),
+        payload: { step: 'participant_context', ...prolificStudyMetadata() } }),
+    });
     await flushStudyOutbox();
     window.EXPERIMENT_PHASE = phase;
 
