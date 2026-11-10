@@ -2409,7 +2409,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
       timeline.push({ type: jsPsychHtmlButtonResponse,
         stimulus: `<div class="screen"><h2>Welcome to this scientific listening study,</h2>
         <p>Please read these instructions carefully before starting.</p>
-        <ul class="instruction-list"><li>Wear <strong>headphones or earphones in both ears</strong> (charged if wireless) and activate noise cancellation if available.</li>
+        <ul class="instruction-list"><li>Wear <strong>headphones or earphones in both ears</strong> (charged if wireless) and disable noise cancellation or any other type of audio enhancement.</li>
         <li>Make sure you are on a computer, laptop or tablet (not a smartphone) and in a quiet place.</li>
         <li>Make sure you won't be disturbed for the duration of the experiment (tell the people around you that you should not be disturbed, close all other applications on your device, put you phone away and in "do not disturb" mode, etc.)</li>
         <li>Put this browser window in <strong>full screen</strong>.</li></ul>
