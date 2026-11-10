@@ -1285,8 +1285,8 @@ function addPartialDownloadButton(
 
 const PROLIFIC_COMPLETION_LINKS = {
   phase1: 'https://app.prolific.com/submissions/complete?cc=CRHUBZUT',
-  phase2: null,
-  phase3: null,
+  phase2: 'https://app.prolific.com/submissions/complete?cc=C1LRTT2Q',
+  phase3: 'https://app.prolific.com/submissions/complete?cc=C1LNIL39',
 };
 
 function renderStudyCompletion(target) {
