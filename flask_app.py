@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, jsonify, url_for
+from flask import Flask, request, render_template, jsonify, url_for, send_file
 from pathlib import Path
 import model
 import json
@@ -50,6 +50,18 @@ def protect_study_endpoints():
     with model.get_connection() as conn:
         study_control.authenticate(conn, data.get('prolificID'), data.get('phase'),
                                    request.headers.get('X-Study-Token') or data.get('session_token'))
+
+@app.post('/api/attention/preview')
+def attention_preview():
+    return jsonify(study_control.preview_attention())
+
+@app.get('/api/attention/audio/<token>.wav')
+def attention_audio(token):
+    response=send_file(study_control.find_attention_audio(token),mimetype='audio/wav',
+                       download_name='audio.wav',conditional=False,etag=False)
+    response.headers['Cache-Control']='no-store'
+    response.headers.pop('Last-Modified',None)
+    return response
 
 @app.post('/api/trial/begin')
 def begin_trial():

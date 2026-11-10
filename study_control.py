@@ -46,6 +46,21 @@ def migrate():
             code TEXT NOT NULL, trial_key TEXT NOT NULL, request_id TEXT NOT NULL,
             detail TEXT NOT NULL, severity TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(prolific_id,phase,code,request_id))''')
+        permission_columns={r[1] for r in conn.execute('PRAGMA table_info(trial_permissions)')}
+        if 'audio_token' not in permission_columns:
+            conn.execute('ALTER TABLE trial_permissions ADD COLUMN audio_token TEXT')
+        conn.execute('CREATE UNIQUE INDEX IF NOT EXISTS permission_audio_token ON trial_permissions(audio_token)')
+        conn.execute('''CREATE TABLE IF NOT EXISTS attention_previews (
+            token TEXT PRIMARY KEY, audio_file TEXT NOT NULL, expires_at REAL NOT NULL)''')
+        # Upgrade only unfinished old text checks, preserving all completed records.
+        for row in conn.execute('SELECT prolific_id,phase,units FROM study_controls').fetchall():
+            units=json.loads(row['units']);changed=False
+            completed={r[0] for r in conn.execute('SELECT trial_key FROM trial_data WHERE prolific_id=? AND phase=?',(row['prolific_id'],row['phase']))}
+            for i,unit in enumerate(units):
+                if unit['section']=='attention' and unit.get('attention_kind')!='spoken_digit_v1' and unit['key'] not in completed:
+                    units[i]=audio_attention_unit(unit['check']);changed=True
+                    conn.execute('DELETE FROM trial_permissions WHERE prolific_id=? AND phase=? AND trial_key=?',(row['prolific_id'],row['phase'],unit['key']))
+            if changed:conn.execute('UPDATE study_controls SET units=? WHERE prolific_id=? AND phase=?',(json.dumps(units),row['prolific_id'],row['phase']))
         columns={r[1] for r in conn.execute('PRAGMA table_info(phase_assignments)')}
         for name in ('invalid_reason','invalidated_at'):
             if name not in columns: conn.execute(f'ALTER TABLE phase_assignments ADD COLUMN {name} TEXT')
@@ -73,6 +88,53 @@ def duration(path):
         return min(5.0, audio.getnframes()/audio.getframerate())
 
 
+def private_audio_file(filename):
+    import re
+    if not isinstance(filename,str) or not re.fullmatch(r'[0-9a-f]{32}\.wav',filename):
+        raise ValueError('Invalid private attention asset')
+    path=ROOT/'private_assets/attention'/filename
+    if not path.is_file():raise ValueError('Missing private spoken-digit WAV. Upload private_assets/attention and reload.')
+    return path
+
+
+def audio_attention_unit(check):
+    path=ROOT/'private_assets/attention/manifest.json'
+    if not path.is_file():raise ValueError('Spoken-digit recordings are missing. Upload private_assets/attention and reload.')
+    clips=json.loads(path.read_text())['clips']
+    if sorted(clip['digit'] for clip in clips)!=list(range(10)):raise ValueError('Spoken-digit manifest must contain digits 0–9 exactly once')
+    clip=secrets.choice(clips);digit=clip['digit']
+    choices=secrets.SystemRandom().sample([n for n in range(10) if n!=digit],2)+[digit]
+    secrets.SystemRandom().shuffle(choices)
+    with wave.open(str(private_audio_file(clip['file'])),'rb') as wav:
+        minimum=wav.getnframes()/wav.getframerate()
+    return {'key':f"attention|{check['id']}",'section':'attention','minimum':minimum,
+            'attention_kind':'spoken_digit_v1','audio_file':clip['file'],'choices':choices,
+            'check':{'id':check['id'],'after':check['after'],'expected_digit':digit}}
+
+
+def public_audio_check(unit,token):
+    return {'kind':'spoken_digit_v1','audio_url':f'/api/attention/audio/{token}.wav','choices':unit['choices']}
+
+
+def preview_attention():
+    unit=audio_attention_unit({'id':0,'after':0});token=secrets.token_urlsafe(32)
+    with model.get_connection() as conn:
+        conn.execute('DELETE FROM attention_previews WHERE expires_at < ?',(time.time(),))
+        conn.execute('INSERT INTO attention_previews(token,audio_file,expires_at) VALUES (?,?,?)',(token,unit['audio_file'],time.time()+900))
+    return public_audio_check(unit,token)
+
+
+def find_attention_audio(token):
+    with model.get_connection() as conn:
+        row=conn.execute('SELECT c.units,p.trial_key FROM trial_permissions p JOIN study_controls c ON c.prolific_id=p.prolific_id AND c.phase=p.phase WHERE p.audio_token=?',(token,)).fetchone()
+        if row:
+            unit=next(u for u in json.loads(row['units']) if u['key']==row['trial_key'])
+            return private_audio_file(unit['audio_file'])
+        preview=conn.execute('SELECT audio_file FROM attention_previews WHERE token=? AND expires_at>=?',(token,time.time())).fetchone()
+        if preview:return private_audio_file(preview['audio_file'])
+    raise ControlError('Audio link unavailable. Reload the study page.','audio_unavailable',404)
+
+
 def make_units(plan):
     phase=plan['phase']
     manifest=json.loads((ROOT/'static/stimulis/training/manifest.json').read_text())
@@ -89,10 +151,10 @@ def make_units(plan):
     for trial in plan['test']:
         for check in checks:
             if check['after'] <= trial['trialIndex'] and check['id'] not in emitted:
-                units.append({'key':f"attention|{check['id']}",'section':'attention','minimum':0,'check':check}); emitted.add(check['id'])
+                units.append(audio_attention_unit(check)); emitted.add(check['id'])
         rating(trial,'test')
     for check in checks:
-        if check['id'] not in emitted: units.append({'key':f"attention|{check['id']}",'section':'attention','minimum':0,'check':check})
+        if check['id'] not in emitted: units.append(audio_attention_unit(check))
     units.append({'key':'feedback|final','section':'feedback','minimum':0})
     return units
 
@@ -152,10 +214,11 @@ def begin(data):
             raise ControlError('The trial order has changed. Reload the page to resume.', 'order_mismatch')
         row=conn.execute('SELECT * FROM trial_permissions WHERE prolific_id=? AND phase=? AND trial_key=?',(pid,phase,key)).fetchone()
         if not row:
-            conn.execute('INSERT INTO trial_permissions(prolific_id,phase,trial_key,ticket,issued_at) VALUES (?,?,?,?,?)',
-                         (pid,phase,key,secrets.token_urlsafe(32),time.time()))
+            conn.execute('INSERT INTO trial_permissions(prolific_id,phase,trial_key,ticket,issued_at,audio_token) VALUES (?,?,?,?,?,?)',
+                         (pid,phase,key,secrets.token_urlsafe(32),time.time(),secrets.token_urlsafe(32) if unit['section']=='attention' else None))
             row=conn.execute('SELECT * FROM trial_permissions WHERE prolific_id=? AND phase=? AND trial_key=?',(pid,phase,key)).fetchone()
         result={'ok':True,'trial_key':key,'ticket':row['ticket'],'minimum_seconds':unit['minimum']}
+        if unit['section']=='attention':result['attention']=public_audio_check(unit,row['audio_token'])
     return result
 
 
@@ -192,7 +255,14 @@ def validate_payload(data,unit,phase):
         if not volume and (p.get('answer') not in ('left','right') or p.get('correct') is not True):raise ControlError('Headphone calibration is incomplete.','invalid_response',422)
     if section=='attention':
         if type(p.get('response')) is not int or p['response'] not in (0,1,2):raise ControlError('Invalid check response.','invalid_response',422)
-        p={**p,'correct':p['response']==unit['check']['expected'],'expected_response':unit['check']['expected']}
+        if unit.get('attention_kind')=='spoken_digit_v1':
+            selected=unit['choices'][p['response']]
+            if type(p.get('selected_number')) is not int or p['selected_number']!=selected:raise ControlError('Invalid number selection.','invalid_response',422)
+            expected=unit['check']['expected_digit']
+            p={**p,'attention_kind':'spoken_digit_v1','selected_number':selected,'expected_digit':expected,
+               'choices':unit['choices'],'correct':selected==expected,'expected_response':unit['choices'].index(expected)}
+        else:
+            p={**p,'correct':p['response']==unit['check']['expected'],'expected_response':unit['check']['expected']}
     if section=='feedback':
         if type(p.get('volume_changed')) is not bool:raise ControlError('Volume answer is required.','invalid_response',422)
         if p['volume_changed'] and (not isinstance(p.get('volume_change_reason'),str) or not p['volume_change_reason'].strip()):raise ControlError('Please explain the volume change.','invalid_response',422)
@@ -230,6 +300,9 @@ def submit(data):
             if remaining>0:
                 raise ControlError('Please finish listening before submitting.','too_early',425,remaining)
             payload=validate_payload(data,unit,phase)
+            if unit.get('attention_kind')=='spoken_digit_v1':
+                payload['audioPath']=f"/api/attention/audio/{grant['audio_token']}.wav"
+                payload['attention_asset_file']=unit['audio_file']
             payload.update(userID=str(assignment[0]),server_verified=True,control_version=1,
                            server_elapsed_seconds=time.time()-grant['issued_at'])
             conn.execute('INSERT INTO trial_data(prolific_id,phase,trial_key,trial_index,section,sound_id,training,payload) VALUES (?,?,?,?,?,?,?,?)',

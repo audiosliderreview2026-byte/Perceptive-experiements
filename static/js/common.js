@@ -2381,11 +2381,10 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
       if (window.PROLIFIC_ID === 'last screen') preview = buildFinalFeedback(phase);
       else if (window.PROLIFIC_ID === 'break') preview = buildBreakScreen();
       else {
-        const count = { phase1: 234, phase2: 190, phase3: 180 }[phase];
-        const check = attentionCheckSchedule(phase, '1', count)[Number(attentionPreview[1]) - 1];
-        // Use the actual check screen, without permission acquisition or saving.
-        preview = buildAttentionCheck(check, phase).timeline[1];
-        preview.on_finish = () => {};
+        const response = await fetch('/api/attention/preview', { method: 'POST' });
+        const audio = await readStudyJson(response);
+        if (!response.ok) throw new Error(audio.error || 'Could not prepare the audio preview.');
+        preview = buildAttentionCheck({ id: Number(attentionPreview[1]) - 1 }, phase, audio).timeline[1];
       }
       await jsPsych.run([preview]);
       return;
@@ -2486,7 +2485,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
       on_timeline_start() { setStudyStage(`Practice ${plan.training.indexOf(trial) + 1} / ${plan.training.length}`); },
     })));
     if (training.length) timeline.push({ type: jsPsychHtmlButtonResponse,
-      stimulus: `<div class="screen"><h3>Practice complete</h3><p>The main study has <strong>${plan.test.length} trials</strong>, with ${plan.procedure.break_after.length} optional breaks. The questions work the same way as in practice. Listen fully and read each question before responding.</p>${qualityReminder}</div>`, choices: ['Start the study'], on_load() { setStudyStage(null); } });
+      stimulus: `<div class="screen"><h3>Practice complete</h3><p>You are now ready for the main study. There are ${plan.test.length} trials, with breaks planned every 10-15min.</p></div>`, choices: ['Start the study'], on_load() { setStudyStage(null); } });
 
     const breaks = plan.procedure?.break_after || [];
     const seenBreaks = new Set();
@@ -2570,26 +2569,67 @@ function attentionCheckSchedule(phase, userID, count) {
   return Array.from({ length: 5 }, (_, id) => {
     const low = Math.max(1, Math.floor(id * count / 5));
     const high = Math.floor((id + 1) * count / 5) - 1;
-    return { id, after: low + Math.floor(random() * (high - low + 1)), expected: Math.floor(random() * 3) };
+    const after = low + Math.floor(random() * (high - low + 1));
+    random(); // Preserve the existing check placement sequence.
+    return { id, after };
   });
 }
 
-function buildAttentionCheck(check, phase) {
-  const labels = ['Left', 'Middle', 'Right'];
-  return { timeline: [buildStudyPermission(`attention|${check.id}`), {
+function buildAttentionCheck(check, phase, previewAudio = null) {
+  const key = `attention|${check.id}`;
+  const context = () => previewAudio || studyAttentionContexts[key];
+  let audio = null;
+  let loaded = false;
+  let failed = false;
+  const trial = {
     type: jsPsychHtmlButtonResponse,
-    stimulus: `<div class="screen"><h3>Please read carefully</h3><p>For this question, select <strong>${labels[check.expected]}</strong>.</p></div>`,
-    choices: labels,
-    data: { step: 'attention', phase, userID: window.ASSIGNED_USER_ID, attention_id: check.id },
+    stimulus: '<div class="screen"><p>Please listen carefully</p><button type="button" class="jspsych-btn" id="attention-play">▶ Play sound</button><p id="attention-status" role="status"></p><h3 id="attention-question" hidden>Select the number you heard</h3></div>',
+    choices: () => context().choices.map(String),
+    data: { step: 'attention', phase, userID: window.ASSIGNED_USER_ID, attention_id: check.id,
+            attention_kind: 'spoken_digit_v1' },
+    on_load() {
+      loaded = false; failed = false;
+      const play = document.getElementById('attention-play');
+      const group = document.getElementById('jspsych-html-button-response-btngroup');
+      const status = document.getElementById('attention-status');
+      group.hidden = true;
+      group.querySelectorAll('button').forEach(button => button.disabled = true);
+      play.onclick = () => {
+        if (loaded) return;
+        failed = false; play.disabled = true;
+        status.textContent = 'Playing…';
+        audio = new Audio(context().audio_url);
+        const failure = () => {
+          if (failed) return;
+          failed = true; play.disabled = false;
+          if (audio) { audio.pause(); audio = null; }
+          status.textContent = 'The sound could not play. Check your connection and try again.';
+        };
+        audio.addEventListener('error', failure, { once: true });
+        audio.addEventListener('ended', () => {
+          if (failed) return;
+          loaded = true; audio = null;
+          play.hidden = true; status.textContent = '';
+          document.getElementById('attention-question').hidden = false;
+          group.hidden = false;
+          group.querySelectorAll('button').forEach(button => button.disabled = false);
+        }, { once: true });
+        audio.play().catch(failure);
+      };
+    },
     async on_finish(data) {
-      const correct = data.response === check.expected;
-      Object.assign(data, { correct, expected_response: check.expected, after_trial_count: check.after });
+      if (audio) { audio.pause(); audio = null; }
+      if (window.STUDY_COMPLETION_PREVIEW) return;
+      Object.assign(data, { selected_number: context().choices[data.response],
+        audioPath: context().audio_url, choices: context().choices, playback_completed: loaded });
       try {
-        await saveTrialToServer({ phase, trialKey: `attention|${check.id}`, section: 'attention', payload: data });
+        await saveTrialToServer({ phase, trialKey: key, section: 'attention', payload: data });
       } catch (error) { showExperimentLoadingError(error); }
     },
-  }] };
+  };
+  return { timeline: [buildStudyPermission(key), trial] };
 }
+
 
 // Durable same-browser outbox. Each request is persisted before transmission.
 const STUDY_OUTBOX_KEY = 'listening-study-outbox-v1';
@@ -2737,6 +2777,7 @@ function archiveLegacyStudyJobs() {
   }
 }
 const studyTrialTickets = {};
+const studyAttentionContexts = {};
 function buildStudyPermission(trialKey) {
   return {
     type: jsPsychHtmlButtonResponse,
@@ -2758,6 +2799,7 @@ function buildStudyPermission(trialKey) {
           const result = await response.json();
           if (!response.ok) throw new Error(result.error || 'Could not prepare the next trial.');
           studyTrialTickets[trialKey] = result.ticket;
+          if (result.attention) studyAttentionContexts[trialKey] = result.attention;
           jsPsych.finishTrial({ trial_key: trialKey });
         } catch (error) {
           document.getElementById('permission-status').textContent = error.message + ' Check your connection; reload this page if another tab has progressed.';

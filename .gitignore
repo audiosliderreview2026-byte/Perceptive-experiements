@@ -9,3 +9,6 @@ __pycache__/
 database_backups/
 research_results*.jsonl
 .DS_Store
+
+# Spoken-digit answer mapping is uploaded privately to the server.
+private_assets/attention/manifest.json

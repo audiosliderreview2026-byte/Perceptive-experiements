@@ -11,7 +11,7 @@ def export(database, output):
         question_keys.update(item['key'] for item in json.loads(path.read_text()))
     question_keys.update(['audibilite_son','heard_sound','heard_sound_A','heard_sound_B',
                          'volume_changed','volume_change_reason','general_feedback','questionnaire_version',
-                         'response','answer','correct','expected_response','rt','ratings_skipped','skip_reason'])
+                         'attention_kind','selected_number','expected_digit','response','answer','correct','expected_response','rt','ratings_skipped','skip_reason'])
     with sqlite3.connect(database) as conn, open(output,'w') as stream:
         conn.row_factory=sqlite3.Row
         has_assignments=conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='phase_assignments'").fetchone()
