@@ -224,26 +224,6 @@
       "trialKey": "phase1:training:0"
     },
     {
-      "audioPath": "/static/stimulis/training/phase1/02_sound.wav",
-      "durationSeconds": 5,
-      "soundId": "02_sound",
-      "soundType": "training",
-      "sourceId": "wood",
-      "stimType": "edited",
-      "trialIndex": 1,
-      "training": true,
-      "trialKey": "phase1:training:1"
-    },
-    {
-      "soundId": "silence",
-      "soundType": "training",
-      "audioPath": "/static/stimulis/training/phase1/03_silence.wav",
-      "durationSeconds": 5,
-      "trialIndex": 2,
-      "training": true,
-      "trialKey": "phase1:training:2"
-    },
-    {
       "alpha": null,
       "condition": "youtube_background",
       "context": null,
@@ -262,6 +242,26 @@
       "soundId": "04_sound",
       "soundType": "training",
       "pool": "training",
+      "trialIndex": 1,
+      "training": true,
+      "trialKey": "phase1:training:1"
+    },
+    {
+      "soundId": "silence",
+      "soundType": "training",
+      "audioPath": "/static/stimulis/training/phase1/03_silence.wav",
+      "durationSeconds": 5,
+      "trialIndex": 2,
+      "training": true,
+      "trialKey": "phase1:training:2"
+    },
+    {
+      "audioPath": "/static/stimulis/training/phase1/02_sound.wav",
+      "durationSeconds": 5,
+      "soundId": "02_sound",
+      "soundType": "training",
+      "sourceId": "wood",
+      "stimType": "edited",
       "trialIndex": 3,
       "training": true,
       "trialKey": "phase1:training:3"
