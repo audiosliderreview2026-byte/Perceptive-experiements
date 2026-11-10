@@ -1578,6 +1578,7 @@ function buildSliderSurveyTrial(
                 class="survey-slider"
                 min="0"
                 max="100"
+                step="1"
                 value="50"
                 aria-label="${question.text}"
               ><span class="rating-midpoint" aria-hidden="true"></span><span class="rating-midpoint-label">${question.middle || ''}</span></div>

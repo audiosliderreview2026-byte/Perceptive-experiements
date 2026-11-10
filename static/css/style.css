@@ -83,16 +83,53 @@ body { background: #eef2f7; }
 .lbl-right { text-align: left;  }
 .survey-slider {
   flex: 1;
+  appearance: none;
   -webkit-appearance: none;
+  -moz-appearance: none;
+  box-sizing: border-box;
+  padding: 0;
+  border: 0;
   height: 5px;
   border-radius: 3px;
-  background: #c5d3e8;
-  outline: none;
+  background: transparent;
   cursor: pointer;
+  direction: ltr;
+}
+/* Keep vendor selectors separate: unsupported selectors invalidate a rule. */
+.survey-slider::-webkit-slider-runnable-track {
+  height: 5px;
+  border: 0;
+  border-radius: 3px;
+  background: #c5d3e8;
+}
+.survey-slider::-moz-range-track {
+  height: 5px;
+  border: 0;
+  border-radius: 3px;
+  background: #c5d3e8;
+}
+.survey-slider::-moz-range-progress {
+  height: 5px;
+  background: transparent;
 }
 .survey-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 20px; height: 20px;
+  appearance: none;
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  margin-top: -7.5px;
+  border-radius: 50%;
+  background: var(--blue);
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,.25);
+}
+.survey-slider::-moz-range-thumb {
+  appearance: none;
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: var(--blue);
   cursor: pointer;
@@ -205,7 +242,7 @@ body { background: #eef2f7; }
 .audibility-options input { margin-right:8px; }
 .rating-track { position:relative; flex:1; min-width:120px; padding-bottom:23px; padding-top:12px; }
 .rating-track .survey-slider { display:block; width:100%; margin:0; position:relative; z-index:1; }
-.rating-midpoint { position:absolute; left:50%; top:6px; height:18px; border-left:2px solid #52637b; pointer-events:none; }
+.rating-midpoint { position:absolute; left:50%; transform:translateX(-50%); top:6px; height:18px; border-left:2px solid #52637b; pointer-events:none; }
 .rating-midpoint-label { position:absolute; left:50%; top:28px; transform:translateX(-50%); white-space:nowrap; font-size:12px; }
 .survey-slider:focus-visible { outline:2px solid var(--blue); outline-offset:5px; }
 .phase-one-survey { max-width:900px; }
