@@ -7,6 +7,15 @@ from pathlib import Path
 import model
 
 
+def legacy_user_id(document):
+    """Old plans may be arrays or omit assignment metadata entirely."""
+    if not isinstance(document, dict): return None
+    value = document.get('userID')
+    if isinstance(value, bool) or value is None: return None
+    text = str(value)
+    return int(text) if text.isdecimal() and 1 <= int(text) <= 512 else None
+
+
 def migrate():
     with model.get_connection() as conn:
         conn.execute('BEGIN IMMEDIATE')
@@ -33,16 +42,20 @@ def migrate():
             # Preserve only phases actually started; unused phases start allocating at 1.
             assignments = {}
             for row in conn.execute('SELECT prolific_id,phase,trial_order FROM phase_sessions'):
-                assignments[(row[0], row[1])] = int(json.loads(row[2])['userID'])
+                user = legacy_user_id(json.loads(row[2]))
+                if user is not None: assignments[(row[0], row[1])] = user
             for table in ('trial_data', 'research_events'):
                 fallback = 'user_id' if table == 'research_events' else 'NULL'
                 for row in conn.execute(f'SELECT prolific_id,phase,payload,{fallback} FROM {table}'):
-                    key = (row[0], row[1]); value = json.loads(row[2]).get('userID', row[3])
+                    key = (row[0], row[1]); value = legacy_user_id(json.loads(row[2]))
+                    if value is None: value = row[3]
                     if value is not None:
                         value = int(value)
                         if key in assignments and assignments[key] != value:
                             raise ValueError(f'Conflicting historical USER IDs for {key}; review before migration')
                         assignments[key] = value
+            for row in conn.execute('SELECT s.prolific_id,s.phase,p.user_id FROM phase_sessions s JOIN participants p ON p.prolific_id=s.prolific_id WHERE p.user_id IS NOT NULL'):
+                assignments.setdefault((row[0], row[1]), row[2])
             for (pid, phase), user in assignments.items():
                 conn.execute('INSERT INTO phase_assignments(prolific_id,phase,user_id) VALUES (?,?,?)', (pid,phase,user))
 
@@ -64,7 +77,9 @@ def assign(prolific_id, phase='phase1'):
             invalid={r[0] for r in conn.execute('SELECT user_id FROM phase_assignments WHERE phase=? AND valid=0',(phase,))}
             legacy=conn.execute('SELECT trial_order FROM phase_sessions WHERE prolific_id=? AND phase=?',(prolific_id,phase)).fetchone()
             if legacy:
-                user=int(json.loads(legacy[0])['userID'])
+                user=legacy_user_id(json.loads(legacy[0]))
+                if user is None:
+                    raise ValueError('This legacy session has no recoverable USER ID. Use a new test Prolific ID; its historical results have been retained.')
                 if user in used: raise ValueError('Historical phase assignment is occupied; review before resuming')
             else:
                 user=next(iter(sorted(invalid-used)),None)
