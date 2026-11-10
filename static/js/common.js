@@ -2106,7 +2106,7 @@ function buildRelativeEmotionTrial(
         <div id="emotion-marker-b" role="slider" tabindex="0" aria-label="Sound B emotion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="55"
           style="position:absolute;left:55%;top:69px;transform:translateX(-50%);width:44px;height:44px;border-radius:50%;background:#d95f59;color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:grab;touch-action:none;user-select:none">B</div>
       </div>
-      <p id="emotion-instruction">Drag both circles to position the sounds. You can also focus each circle and use the arrow keys. The circles may be placed at the same position.</p>
+      
     </div>
   `;
 
@@ -2137,11 +2137,9 @@ function buildRelativeEmotionTrial(
     on_load() {
       const scale = document.getElementById('emotion-scale-container');
       const submit = document.querySelector('.jspsych-btn');
-      const instruction = document.getElementById('emotion-instruction');
       const ready = () => {
         submit.disabled = !(touched.A && touched.B);
         onRatingChange(touched.A && touched.B);
-        if (!submit.disabled) instruction.textContent = 'Both sounds have been positioned. You may adjust them further or submit.';
       };
       for (const role of ['A', 'B']) {
         const marker = document.getElementById(`emotion-marker-${role.toLowerCase()}`);
@@ -2445,7 +2443,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
         stimulus: `<div class="screen"><h2>Welcome to this scientific listening study,</h2>
         <p>Please read these instructions carefully before starting.</p>
         <ul class="instruction-list"><li>Wear <strong>headphones or earphones in both ears</strong> (charged if wireless) and disable noise cancellation or any other type of audio enhancement.</li>
-        <li>Make sure you are on a computer, laptop or tablet (not a smartphone) and in a quiet place.</li>
+        <li>Make sure you are on a computer or laptop (not a smartphone) and in a quiet place.</li>
         <li>Make sure you won't be disturbed for the duration of the experiment (tell the people around you that you should not be disturbed, close all other applications on your device, put you phone away and in "do not disturb" mode, etc.)</li>
         <li>Put this browser window in <strong>full screen</strong>.</li></ul>
         <p>The study has three stages: <strong>calibration → practice → main study</strong>. It should last about <strong>1 hour</strong>.</p>
@@ -2524,7 +2522,7 @@ function buildPairedSurvey(jsPsych, questions, options = {}) {
   const trial = window.EXPERIMENT_PHASE === 'phase2'
     ? buildRelativeEmotionTrial(jsPsych, settings) : buildSliderSurveyTrial(jsPsych, questions, settings);
   const load = trial.on_load, finish = trial.on_finish;
-  trial.stimulus = `<div class="survey-wrap paired-survey">${['A', 'B'].map(role => `<fieldset class="audibility-options"><legend>Sound ${role}: did you hear something?</legend><label><input type="radio" name="heard-${role}" value="no"> No, I didn’t hear anything</label><label><input type="radio" name="heard-${role}" value="yes"> Yes, I heard something</label></fieldset>`).join('')}<div id="paired-ratings">${trial.stimulus}</div><p id="paired-help" role="status"></p></div>`;
+  trial.stimulus = `<div class="survey-wrap paired-survey">${['A', 'B'].map(role => `<fieldset class="audibility-options"><legend>Sound ${role}: did you hear something?</legend><label><input type="radio" name="heard-${role}" value="no"> No, I didn’t hear anything</label><label><input type="radio" name="heard-${role}" value="yes"> Yes, I heard something</label></fieldset>`).join('')}<div id="paired-ratings">${trial.stimulus}</div></div>`;
   trial.on_load = () => {
     heard.A = heard.B = null; ratingsReady = false; update = null;
     load();
@@ -2533,9 +2531,6 @@ function buildPairedSurvey(jsPsych, questions, options = {}) {
       const skip = heard.A === false || heard.B === false;
       document.getElementById('paired-ratings').hidden = skip;
       submit.disabled = heard.A === null || heard.B === null || (!skip && !ratingsReady);
-      document.getElementById('paired-help').textContent = skip
-        ? ''
-        : 'Answer for both sounds and move every slider or both circles before submitting.';
     };
     for (const role of ['A', 'B']) document.querySelectorAll(`input[name="heard-${role}"]`).forEach(input => input.addEventListener('change', () => { heard[role] = input.value === 'yes'; update(); }));
     update();
@@ -2644,14 +2639,13 @@ function buildPhaseOneSurvey(jsPsych, questions, options) {
   const originalFinish = trial.on_finish;
   let answer = null;
   const moved = new Set();
-  trial.stimulus = `<div class="survey-wrap phase-one-survey"><fieldset class="audibility-options"><legend>Did you hear footsteps?</legend>${[questions[0].left, questions[0].answer2, questions[0].answer3].map((label, index) => `<label><input type="radio" name="heard" value="${index}"> ${label}</label>`).join('')}</fieldset><div id="phase-one-ratings">${trial.stimulus}</div><p id="rating-help" role="status"></p></div>`;
+  trial.stimulus = `<div class="survey-wrap phase-one-survey"><fieldset class="audibility-options"><legend>Did you hear footsteps?</legend>${[questions[0].left, questions[0].answer2, questions[0].answer3].map((label, index) => `<label><input type="radio" name="heard" value="${index}"> ${label}</label>`).join('')}</fieldset><div id="phase-one-ratings">${trial.stimulus}</div></div>`;
   trial.on_load = () => {
     originalLoad(); answer = null; moved.clear();
     const submit = document.querySelector('#jspsych-html-button-response-btngroup button');
     const update = () => {
       document.getElementById('phase-one-ratings').hidden = answer === 0;
       submit.disabled = answer === null || (answer !== 0 && moved.size !== questions.length - 1);
-      document.getElementById('rating-help').textContent = answer === 0 ? '' : 'Select an answer and move both sliders before submitting.';
     };
     document.querySelectorAll('input[name="heard"]').forEach(input => input.addEventListener('change', () => { answer = Number(input.value); update(); }));
     questions.slice(1).forEach((q, index) => document.getElementById(`q${index}`).addEventListener('input', () => { moved.add(index); update(); }));
@@ -2671,10 +2665,10 @@ function buildFinalFeedback(phase) {
   return {
     type: jsPsychHtmlButtonResponse, choices: [],
     stimulus: `<div class="screen"><h2>Before you finish</h2><form id="final-feedback">
-      <fieldset class="audibility-options"><legend>Did you change the volume during the experiment?</legend>
+      <fieldset class="audibility-options"><legend>Did you end up changing the volume at any point during the experiment?</legend>
       <label><input type="radio" name="volume_changed" value="yes" required> Yes</label>
       <label><input type="radio" name="volume_changed" value="no" required> No</label></fieldset>
-      <div id="volume-reason-field" hidden><label for="volume-reason">Please explain briefly why.</label><textarea id="volume-reason" maxlength="4000" rows="3"></textarea></div>
+      <div id="volume-reason-field" hidden><label for="volume-reason">Please explain briefly what happened.</label><textarea id="volume-reason" maxlength="4000" rows="3"></textarea></div>
       <label for="general-feedback">General feedback (optional)</label><p>Anything you think might be helpful for us to know?</p>
       <textarea id="general-feedback" maxlength="10000" rows="4"></textarea>
       <button type="submit" class="jspsych-btn">Submit and finish</button></form></div>`,
@@ -2692,7 +2686,7 @@ function buildFinalFeedback(phase) {
       form.addEventListener('submit', event => {
         event.preventDefault();
         const changed = form.elements.volume_changed.value === 'yes';
-        if (changed && !reason.value.trim()) { reason.setCustomValidity('Please explain briefly why.'); reason.reportValidity(); return; }
+        if (changed && !reason.value.trim()) { reason.setCustomValidity('Please explain briefly what happened.'); reason.reportValidity(); return; }
         jsPsych.finishTrial({ volume_changed: changed, volume_change_reason: changed ? reason.value.trim() : null,
           general_feedback: document.getElementById('general-feedback').value.trim() });
       });

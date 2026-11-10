@@ -257,3 +257,6 @@ body { background: #eef2f7; }
   .slider-lbl { width:85px; font-size:12px; }
   .survey-item { padding:14px 10px; }
 }
+
+/* Keep the final feedback question smaller than trial audibility prompts. */
+#final-feedback .audibility-options legend { font-size:16px; line-height:1.5; }
