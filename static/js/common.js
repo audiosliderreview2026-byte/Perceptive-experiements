@@ -1594,6 +1594,7 @@ function buildSliderSurveyTrial(
                 step="1"
                 value="50"
                 aria-label="${question.text}"
+                data-question-key="${question.key}"
               ><span class="rating-midpoint" aria-hidden="true"></span><span class="rating-midpoint-label">${question.middle || ''}</span></div>
 
               <span class="slider-lbl lbl-right">
@@ -2101,9 +2102,9 @@ function buildRelativeEmotionTrial(
       <div id="emotion-scale-container" style="position:relative;height:130px;margin:10px 24px;touch-action:none">
         <div style="position:absolute;top:62px;left:0;right:0;height:5px;background:#b8b8b8;border-radius:3px"></div>
         <div aria-hidden="true" style="position:absolute;left:50%;top:55px;height:19px;border-left:2px solid #555"></div>
-        <div id="emotion-marker-a" role="slider" tabindex="0" aria-label="Sound A emotion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="45"
+        <div id="emotion-marker-a" data-question-key="Emotion_A" role="slider" tabindex="0" aria-label="Sound A emotion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="45"
           style="position:absolute;left:45%;top:16px;transform:translateX(-50%);width:44px;height:44px;border-radius:50%;background:#3273dc;color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:grab;touch-action:none;user-select:none">A</div>
-        <div id="emotion-marker-b" role="slider" tabindex="0" aria-label="Sound B emotion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="55"
+        <div id="emotion-marker-b" data-question-key="Emotion_B" role="slider" tabindex="0" aria-label="Sound B emotion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="55"
           style="position:absolute;left:55%;top:69px;transform:translateX(-50%);width:44px;height:44px;border-radius:50%;background:#d95f59;color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:grab;touch-action:none;user-select:none">B</div>
       </div>
       
@@ -2145,10 +2146,12 @@ function buildRelativeEmotionTrial(
         const marker = document.getElementById(`emotion-marker-${role.toLowerCase()}`);
         const update = value => {
           value = Math.max(0, Math.min(100, Math.round(value)));
-          if (value !== state[`Emotion_${role}`]) touched[role] = true;
+          const changed = value !== state[`Emotion_${role}`];
+          if (changed) touched[role] = true;
           state[`Emotion_${role}`] = value;
           marker.style.left = `${value}%`;
           marker.setAttribute('aria-valuenow', value);
+          if (changed) studyScreenTiming.interaction({type: 'input', target: marker});
           ready();
         };
         let dragging = false;
@@ -2463,7 +2466,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
         <li>Make sure you won't be disturbed for the duration of the experiment (tell the people around you that you should not be disturbed, close all other applications on your device, put you phone away and in "do not disturb" mode, etc.)</li>
         <li>Put this browser window in <strong>full screen</strong>.</li></ul>
         <p>The study has three stages: <strong>calibration → practice → main study</strong>. It should last about <strong>1 hour</strong>, with a 2min pause every 10-15min.</p>
-        <p>For this study to yield valid scientific conclusions, we rely on you to carefully follow the instructions, listen attentively to the sounds and answer the questions honestly and thoughtfully. Various technical and attention checks have been included and we reserve the right to reject your submission should you fail these checks.</p><p>Thank you for your time and contribution to this study!</p></div>`,
+        <p>For this study to yield valid scientific conclusions, we rely on you to carefully follow the instructions, listen attentively to the sounds and answer the questions honestly and thoughtfully. Various technical and attention checks have been included and we reserve the right to reject your submission should you fail too many of these checks.</p><p><strong>Use of AI is prohibited.</strong> We systematically check for AI-assisted/botted submissions and will reject them.</p><p>Thank you for your time and contribution to this study!</p></div>`,
         choices: ['Continue'] });
     }
     timeline.push(...buildCalibrationTrials(completed));
@@ -2516,7 +2519,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
     }
     if (!completed.has('feedback|final')) timeline.push({ timeline: [buildStudyPermission('feedback|final'), buildFinalFeedback(phase)] });
     console.info(`[${phase}] USER ID ${userID}: ${plan.test.length} assigned, ${remaining.length} remaining.`);
-    await jsPsych.run(timeline);
+    await jsPsych.run(instrumentStudyTimeline(timeline));
   } catch (error) {
     showExperimentLoadingError(error);
   }
@@ -2815,4 +2818,110 @@ function buildStudyPermission(trialKey) {
 function buildBreakScreen() {
   return { type: jsPsychHtmlButtonResponse,
           stimulus: `<div class="screen"><h3>Time for a break</h3><p>You may rest for two minutes. Continue whenever you are ready.</p><p>Before continuing, put both earphones back in place, check that your surroundings are quiet, and return your attention to the recordings. Keep the calibrated volume unchanged.</p></div>`, choices: ['Continue when ready'] };
+}
+
+
+// Client-reported timing is separate from the server's authoritative minimum timer.
+class StudyScreenTiming {
+  constructor() { this.state = null; this.handlers = []; this.interval = null; }
+  start(metadata = {}) {
+    if (this.state) { this.checkpoint('interrupted'); this.finish(); }
+    const now = performance.now();
+    this.state = { id: crypto.randomUUID(), start: now, startedAt: new Date().toISOString(),
+      metadata: { step: metadata.step || 'instruction', trialIndex: metadata.trialIndex,
+        soundId: metadata.soundId, calibration_test: metadata.calibration_test, training: !!metadata.training },
+      label: document.querySelector('#jspsych-content h2, #jspsych-content h3, #jspsych-content legend')?.textContent?.trim().slice(0, 200) || '',
+      hiddenStart: document.hidden ? now : null, hiddenMs: 0, visibilityChanges: 0,
+      first: null, last: null, questions: {}, interactions: [], omitted: 0 };
+    const listen = (target, type, fn) => {
+      target.addEventListener(type, fn, true); this.handlers.push([target, type, fn]);
+    };
+    for (const type of ['click','pointerdown','pointerup','keydown','input','change','focusin']) {
+      listen(document, type, event => this.interaction(event));
+    }
+    listen(document, 'visibilitychange', () => {
+      const state = this.state, at = performance.now(); if (!state) return;
+      state.visibilityChanges++;
+      if (document.hidden && state.hiddenStart === null) state.hiddenStart = at;
+      else if (!document.hidden && state.hiddenStart !== null) { state.hiddenMs += at - state.hiddenStart; state.hiddenStart = null; }
+      if (document.hidden) this.checkpoint('background');
+    });
+    listen(window, 'pagehide', () => this.checkpoint('pagehide'));
+    this.interval = setInterval(() => this.checkpoint('periodic'), 15000);
+  }
+  interaction(event) {
+    const s = this.state;
+    if (!s || !event.target?.closest) return;
+    const control = event.target.closest('button,input,textarea,select,[role="slider"]');
+    if (!control || control.disabled) return;
+    const tag = control.tagName.toLowerCase();
+    const slider = control.type === 'range' || control.getAttribute('role') === 'slider';
+    // No free-text keystrokes, entered text, clipboard contents or mouse trajectories.
+    if (event.type === 'keydown' && !slider) return;
+    const aliases = { heard:'audibilite_son', 'heard-A':'heard_sound_A', 'heard-B':'heard_sound_B',
+      'emotion-marker-a':'Emotion_A', 'emotion-marker-b':'Emotion_B',
+      'volume-reason':'volume_change_reason', 'general-feedback':'general_feedback' };
+    const identifier = control.name || control.id || '';
+    const buttonQuestion = s.metadata.step === 'attention' ? 'attention_number' : s.metadata.calibration_test === 'volume' ? 'calibration_volume' : 'screen_button';
+    const question = control.dataset?.questionKey || aliases[identifier] || identifier || (tag === 'button' ? buttonQuestion : 'control');
+    const at = Math.max(0, performance.now() - s.start);
+    if (s.first === null) s.first = at;
+    s.last = at;
+    const q = s.questions[question] || (s.questions[question] = {
+      first_interaction_ms: at, last_interaction_ms: at, first_focus_ms: null,
+      first_change_ms: null, last_change_ms: null, interactions: 0 });
+    q.last_interaction_ms = at; q.interactions++;
+    if (event.type === 'focusin' && q.first_focus_ms === null) q.first_focus_ms = at;
+    if (event.type === 'input' || event.type === 'change') {
+      if (q.first_change_ms === null) q.first_change_ms = at;
+      q.last_change_ms = at;
+    }
+    const item = { type: event.type, at_ms: at, question, control_id: control.id || null,
+      control_type: slider ? 'slider' : tag === 'button' ? 'button' : control.type || tag };
+    if (tag === 'button') item.button_label = (control.textContent || '').trim().slice(0, 120);
+    if (s.interactions.length < 2000) s.interactions.push(item); else s.omitted++;
+  }
+  snapshot(complete = false) {
+    const s = this.state; if (!s) return {};
+    const end = performance.now(), duration = Math.max(0, end - s.start);
+    const hidden = Math.min(duration, s.hiddenMs + (s.hiddenStart === null ? 0 : end - s.hiddenStart));
+    return { screen_duration_ms: duration, timing_complete: complete,
+      timing: { version: 1, client_reported: true, clock: 'performance.now', screen_id: s.id,
+        screen_label: s.label, started_at: s.startedAt, measured_at: new Date().toISOString(),
+        visible_duration_ms: duration - hidden, hidden_duration_ms: hidden,
+        visibility_changes: s.visibilityChanges, first_interaction_ms: s.first,
+        last_interaction_ms: s.last, questions: JSON.parse(JSON.stringify(s.questions)),
+        interactions: s.interactions.map(item => ({...item})), omitted_interactions: s.omitted } };
+  }
+  checkpoint(reason) {
+    if (!this.state || window.STUDY_COMPLETION_PREVIEW || !window.STUDY_SESSION_TOKEN || !window.ASSIGNED_USER_ID) return;
+    const payload = { ...this.state.metadata, ...this.snapshot(),
+      event_kind: 'timing_checkpoint', checkpoint_reason: reason, ...prolificStudyMetadata() };
+    durableStudyPost('/api/event', { method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({event_id: crypto.randomUUID(), prolificID: window.PROLIFIC_ID,
+        userID: window.ASSIGNED_USER_ID, phase: window.EXPERIMENT_PHASE,
+        client_time: new Date().toISOString(), payload}) }).catch(showSavingStatus);
+  }
+  finish() {
+    const result = this.snapshot(true);
+    for (const [target, type, fn] of this.handlers) target.removeEventListener(type, fn, true);
+    this.handlers = []; clearInterval(this.interval); this.interval = null; this.state = null;
+    return result;
+  }
+}
+const studyScreenTiming = new StudyScreenTiming();
+function instrumentStudyTimeline(timeline) {
+  for (const trial of timeline) {
+    if (trial.timeline) { instrumentStudyTimeline(trial.timeline); continue; }
+    const load = trial.on_load, finish = trial.on_finish;
+    trial.on_load = function(...args) {
+      studyScreenTiming.start(typeof trial.data === 'object' ? trial.data : {});
+      return load?.apply(this, args);
+    };
+    trial.on_finish = function(data) {
+      Object.assign(data, studyScreenTiming.finish());
+      return finish?.call(this, data);
+    };
+  }
+  return timeline;
 }

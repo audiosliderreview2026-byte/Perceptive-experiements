@@ -86,3 +86,22 @@ Older unsent browser jobs that predate permissions are preserved locally under `
 ## Spoken-digit checks
 
 The new attention checks supersede the earlier text-only instruction checks. Read ATTENTION_AUDIO.md before deployment: the answer map is uploaded privately, while the opaque WAVs and code are deployed through Git. Five randomized spoken-digit checks use three number choices, server-side scoring and recording-duration timing. Existing validity rules remain. Completed historical checks are preserved, and unfinished text checks are migrated. Selected/expected digits and correctness are available in exports and the inspection notebook. Previews attention1–attention5 use ephemeral, unsaved checks.
+
+## Systematic screen and interaction timing
+
+New browser sessions record timing for every jsPsych screen: instructions, calibration attempts, listening screens, practice and main questionnaires, attention checks, feedback, breaks, loading and server-permission screens. Preview IDs remain unsaved. Existing jsPsych `rt` is retained, but custom forms now also have a common measurement independent of plugin RT.
+
+- `screen_duration_ms`: monotonic client render-to-finish duration, measured before the response-saving callback; it includes audio playback and hidden-tab time.
+- `timing_complete`: true for finished screens; false for partial checkpoints.
+- `timing.screen_id`: unique per presentation/attempt, including repeated calibration or resumed screens.
+- `timing.started_at` / `measured_at`: client wall-clock timestamps for orientation; relative timing uses performance.now.
+- `timing.visible_duration_ms` and `hidden_duration_ms`: screen duration split by document visibility. Visible time does not establish attention.
+- `timing.first_interaction_ms` / `last_interaction_ms`: first/last observed control interaction relative to screen appearance.
+- `timing.questions[question_key]`: first/last interaction, first focus, first/last change, and event count. Generic sliders use questionnaire keys; phase 2 circles use Emotion_A/B. Audibility, feedback fields, calibration and attention controls are also identified.
+- `timing.interactions`: chronological click, pointer-down/up, slider keyboard, focus and input/change timestamps. Button entries include their visible label. Free-text contents, key identities, clipboard data and mouse trajectories are not captured by this tracker. Submitted feedback text continues to be saved normally. The event array is capped at 2,000 entries per screen, with omitted_interactions recording truncation; question summaries continue updating.
+
+Measurements are saved with completed answers and each screen's research event. Checkpoints are saved every 15 seconds, when the tab becomes hidden, and on pagehide, using the existing durable outbox. If the browser closes abruptly without pagehide, the last interval can be missing. Offline checkpoints are retained locally until transmitted. Returning to an interrupted question produces a new screen_id. No browser-storage data can be recovered after it has been cleared.
+
+All times are in milliseconds. Several questions can appear simultaneously, so per-question interaction latencies are relative to the screen's appearance, not isolated question reading/decision times. Focus alone is not an answer, and slider changes can occur several times before submission. These measurements are client-reported descriptive data, distinct from the server's eligibility timer (`server_elapsed_seconds`). They do not change automatic invalidation rules.
+
+The inspection notebook adds screen_timings, question_timings and click_timings dataframes. It selects the final/latest snapshot per screen_id to avoid counting raw-screen events, accepted completed-unit events and checkpoints as separate presentations. Partial records remain marked incomplete. Legacy records without the new metadata are skipped. JSONL exports retain the full timing object in payload, and include screen_duration_ms/timing_complete in answers. No database migration/reset is needed; deploy common.js and export_results.py, refresh the study page, then download a fresh snapshot for analysis.
