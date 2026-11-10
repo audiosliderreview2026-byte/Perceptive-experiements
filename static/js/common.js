@@ -2425,7 +2425,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
       <p>In practice, as in the main experiment, each sound will be played <strong>only once and cannot be replayed</strong>. Please listen carefully.</p>
       <p>If for any reason you get disconnected, use the link in Prolific to reconnect to the experiment. You will automatically continue where you left off.</p></div>` : `<div class="screen"><h2>Practice</h2>
       <p>You will now complete <strong>${plan.training.length} practice trials</strong> to familiarize yourself with the task. At the beginning of each trial, you will hear <strong>two 5-second sounds</strong>: Sound A, then Sound B.</p>
-      <p>Then we will ask you:</p><ol class="instruction-list"><li>Whether you heard anything in Sound A and in Sound B, separately. If either sound was inaudible, the ratings will disappear. Answer both audibility questions and submit.</li>
+      <p>Then we will ask you:</p><ol class="instruction-list"><li>Whether you heard anything in Sound A and in Sound B, separately.</li>
       ${phase === 'phase2' ? `<li>${questions[0].text} Place <strong>blue A and red B</strong> on the same scale, from <strong>${questions[0].left}</strong> to <strong>${questions[0].right}</strong>. They may occupy the same position.</li>` : questions.map(q => `<li>${q.text} Use the scale from <strong>${q.left}</strong> to <strong>${q.right}</strong>.</li>`).join('')}
       </ol><p>There is no preferred answer: give your own impression.</p>
       <p>In practice, as in the main experiment, each sound will be played <strong>only once and cannot be replayed</strong>. Please listen carefully. Keep your headphones on and your calibrated volume unchanged.</p>
@@ -2499,7 +2499,7 @@ function buildPairedSurvey(jsPsych, questions, options = {}) {
       document.getElementById('paired-ratings').hidden = skip;
       submit.disabled = heard.A === null || heard.B === null || (!skip && !ratingsReady);
       document.getElementById('paired-help').textContent = skip
-        ? 'Answer for both sounds, then submit without answering the ratings.'
+        ? ''
         : 'Answer for both sounds and move every slider or both circles before submitting.';
     };
     for (const role of ['A', 'B']) document.querySelectorAll(`input[name="heard-${role}"]`).forEach(input => input.addEventListener('change', () => { heard[role] = input.value === 'yes'; update(); }));
@@ -2602,7 +2602,7 @@ function buildPhaseOneSurvey(jsPsych, questions, options) {
     const update = () => {
       document.getElementById('phase-one-ratings').hidden = answer === 0;
       submit.disabled = answer === null || (answer !== 0 && moved.size !== questions.length - 1);
-      document.getElementById('rating-help').textContent = answer === 0 ? 'You may submit without answering the sliders.' : 'Select an answer and move both sliders before submitting.';
+      document.getElementById('rating-help').textContent = answer === 0 ? '' : 'Select an answer and move both sliders before submitting.';
     };
     document.querySelectorAll('input[name="heard"]').forEach(input => input.addEventListener('change', () => { answer = Number(input.value); update(); }));
     questions.slice(1).forEach((q, index) => document.getElementById(`q${index}`).addEventListener('input', () => { moved.add(index); update(); }));
