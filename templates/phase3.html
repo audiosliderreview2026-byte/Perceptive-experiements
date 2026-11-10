@@ -15,7 +15,7 @@
     <script src="https://unpkg.com/@jspsych/plugin-audio-button-response@2.1.1"></script>
 
     <link
-      href="{{ url_for('static', filename='css/style.css') }}"
+      href="{{ study_asset('css/style.css') }}"
       rel="stylesheet"
     />
   </head>
@@ -26,8 +26,8 @@
     window.PROLIFIC_ID = document.body.dataset.prolificId;
   </script>
 
-  <script src="{{ url_for('static', filename='js/common.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/phase3.js') }}"></script>
+  <script src="{{ study_asset('js/common.js') }}"></script>
+  <script src="{{ study_asset('js/phase3.js') }}"></script>
 
 </body>
 </html>

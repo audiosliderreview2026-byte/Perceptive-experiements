@@ -1,8 +1,9 @@
-from flask import Flask, request, render_template, jsonify
+from flask import Flask, request, render_template, jsonify, url_for
 from pathlib import Path
 import model
 import json
 import gzip
+import hashlib
 import mmap
 import re
 import uuid
@@ -13,6 +14,22 @@ initialize_db()
 persistence.migrate()
 app = Flask(__name__)
 #CORS(app)
+
+@app.context_processor
+def study_assets():
+    def study_asset(filename):
+        path = Path(app.static_folder) / filename
+        version = hashlib.sha256(path.read_bytes()).hexdigest()[:16]
+        return url_for('static', filename=filename, v=version)
+    return {'study_asset': study_asset}
+
+@app.after_request
+def fresh_study_pages(response):
+    # PythonAnywhere serves static assets directly; their URLs carry content hashes.
+    if response.mimetype == 'text/html':
+        response.headers['Cache-Control'] = 'no-store'
+    return response
+
 
 @app.get("/")
 def home():
