@@ -1310,7 +1310,7 @@ function makeJsPsych(
       auto_update_progress_bar: false,
 
       on_data_update(data) {
-        if (!window.ASSIGNED_USER_ID) return;
+        if (window.STUDY_COMPLETION_PREVIEW || !window.ASSIGNED_USER_ID) return;
         durableStudyPost('/api/event', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ event_id: crypto.randomUUID(),
@@ -1319,6 +1319,11 @@ function makeJsPsych(
         }).catch(showSavingStatus);
       },
       async on_finish() {
+        if (window.STUDY_COMPLETION_PREVIEW) {
+          finished = true;
+          renderStudyCompletion(jsPsych.getDisplayElement());
+          return;
+        }
         await waitForStudySaves();
         finished = true;
 
@@ -2355,7 +2360,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
     window.PROLIFIC_ID = prolificID.trim();
     if (window.PROLIFIC_ID === 'last screen') {
       window.STUDY_COMPLETION_PREVIEW = true;
-      renderStudyCompletion(document.body);
+      await jsPsych.run([buildFinalFeedback(phase)]);
       return;
     }
     const registration = await fetch('/api/participant', {
@@ -2657,6 +2662,7 @@ function buildFinalFeedback(phase) {
       });
     },
     on_finish(data) {
+      if (window.STUDY_COMPLETION_PREVIEW) return;
       saveTrialToServer({ phase, trialKey: 'feedback|final', section: 'feedback', training: false, payload: data })
         .catch(error => console.error('Feedback save failed:', error));
     },
