@@ -10,8 +10,10 @@ import uuid
 from functools import lru_cache
 from init_db import initialize_db
 import persistence
+import study_control
 initialize_db()
 persistence.migrate()
+study_control.migrate()
 app = Flask(__name__)
 #CORS(app)
 
@@ -26,10 +28,32 @@ def study_assets():
 @app.after_request
 def fresh_study_pages(response):
     # PythonAnywhere serves static assets directly; their URLs carry content hashes.
-    if response.mimetype == 'text/html':
+    if response.mimetype == 'text/html' or request.path.startswith('/api/'):
         response.headers['Cache-Control'] = 'no-store'
     return response
 
+
+@app.errorhandler(study_control.ControlError)
+def control_error(error):
+    return jsonify(ok=False, error=str(error), code=error.code,
+                   retry_after_seconds=error.retry_after), error.status
+
+@app.before_request
+def protect_study_endpoints():
+    if request.path not in ('/api/save-trial','/api/trial/begin','/api/session','/api/progress','/api/event'):
+        return
+    data=(request.get_json(silent=True) or {}) if request.method=='POST' else request.args
+    if not hasattr(data,'get'):
+        raise study_control.ControlError('Invalid request body.','invalid_request',400)
+    if not isinstance(data.get('prolificID'),str) or data.get('phase') not in ('phase1','phase2','phase3'):
+        raise study_control.ControlError('Participant and phase are required.','invalid_request',400)
+    with model.get_connection() as conn:
+        study_control.authenticate(conn, data.get('prolificID'), data.get('phase'),
+                                   request.headers.get('X-Study-Token') or data.get('session_token'))
+
+@app.post('/api/trial/begin')
+def begin_trial():
+    return jsonify(study_control.begin(request.get_json() or {}))
 
 @app.get("/")
 def home():
@@ -113,28 +137,8 @@ def save_trial():
             "missing": missing,
         }), 400
 
-    try:
-        participant = persistence.assign(data['prolificID'], data.get('phase'))
-        if str(data.get('payload', {}).get('userID')) != participant['userID']:
-            return jsonify(error='USER ID does not match database assignment'), 409
-    except ValueError as exc:
-        return jsonify(error=str(exc)), 409
-    inserted = model.save_trial(data)
-    # Final question values are explicit here, independent of jsPsych hook ordering.
-    persistence.save_event({
-        'event_id': str(uuid.uuid5(uuid.NAMESPACE_URL,
-                         f"{data['prolificID']}:{data['phase']}:{data['trial_key']}:completed")),
-        'prolificID': data['prolificID'], 'userID': participant['userID'],
-        'phase': data['phase'],
-        'payload': {**data['payload'], 'record_kind': 'completed_unit',
-                    'trial_key': data['trial_key'], 'section': data['section'],
-                    'training': bool(data.get('training'))},
-    })
+    return jsonify(study_control.submit(data))
 
-    return jsonify({
-        "ok": True,
-        "inserted": inserted,
-    })
 
 @app.get("/api/progress")
 def get_progress():
@@ -208,12 +212,13 @@ def create_session():
         }), 400
 
     participant = persistence.assign(prolific_id, phase)
-    if str(trial_order.get('userID')) != participant['userID']:
+    expected_plan = load_assigned_plan(phase, participant['userID'])
+    if trial_order != expected_plan:
         return jsonify(error='Plan does not match database USER ID'), 409
     session = model.create_phase_session(
         prolific_id,
         phase,
-        trial_order
+        expected_plan
     )
 
     return jsonify({
@@ -308,39 +313,47 @@ def assigned_trial_order():
         return jsonify(error="phase must be phase1, phase2 or phase3"), 400
     if not user_id.isdecimal() or not 1 <= int(user_id) <= 512:
         return jsonify(error="userID must be an integer from 1 to 512"), 400
+    response=jsonify(load_assigned_plan(phase,user_id))
+    response.headers['Cache-Control']='no-store'
+    return response
+
+
+def load_assigned_plan(phase,user_id):
     user_id = str(int(user_id))
     packed = Path(app.root_path) / "trial_orders_output" / phase / f"{user_id}.json.gz"
     if packed.is_file():
         with gzip.open(packed, 'rt', encoding='utf-8') as stream:
             plan = json.load(stream)
         if plan.get('userID') != user_id or plan.get('phase') != phase:
-            return jsonify(error='Trial-order metadata mismatch'), 500
-        response = jsonify(plan)
-        response.headers['Cache-Control'] = 'no-store'
-        return response
+            raise ValueError('Trial-order metadata mismatch')
+        return plan
     filename = Path(app.root_path) / "trial_orders_output" / f"{phase}_trial_orders.json"
     if not filename.is_file():
-        return jsonify(error="Trial orders missing. Run subjective_trial_orders.ipynb first."), 404
+        raise ValueError('Trial orders missing. Run subjective_trial_orders.ipynb first.')
     stat = filename.stat()
     index = _trial_order_index(str(filename), stat.st_mtime_ns, stat.st_size)
     if user_id not in index:
-        return jsonify(error="USER ID not found in the version-3 trial-order export"), 404
+        raise ValueError('USER ID not found in the version-3 trial-order export')
     start, end = index[user_id]
     with filename.open("rb") as stream:
         stream.seek(start)
         text = stream.read(end - start).decode("utf-8")
     plan, _ = json.JSONDecoder().raw_decode(text)
     if plan.get("userID") != user_id or plan.get("phase") != phase:
-        return jsonify(error="Trial-order metadata mismatch"), 500
-    response = jsonify(plan)
-    response.headers["Cache-Control"] = "no-store"
-    return response
+        raise ValueError('Trial-order metadata mismatch')
+    return plan
 
 
 @app.post('/api/participant')
 def register_participant():
     try:
-        return jsonify(persistence.assign((request.get_json() or {}).get('prolificID'), (request.get_json() or {}).get('phase')))
+        data=request.get_json() or {}
+        participant=persistence.assign(data.get('prolificID'),data.get('phase'))
+        plan=load_assigned_plan(participant['phase'],participant['userID'])
+        participant['session_token']=study_control.register(participant['prolificID'],participant['phase'],plan)
+        participant['training']=study_control.fixed_training(participant['prolificID'],participant['phase'])
+        participant['control_version']=1
+        return jsonify(participant)
     except ValueError as exc:
         return jsonify(error=str(exc)),409
 
@@ -348,6 +361,9 @@ def register_participant():
 @app.post('/api/event')
 def save_research_event():
     try:
-        return jsonify(persistence.save_event(request.get_json() or {}))
+        data=request.get_json() or {}
+        if isinstance(data.get('payload'),dict):
+            data['payload']={**data['payload'],'record_kind':'client_screen','server_verified':False}
+        return jsonify(persistence.save_event(data))
     except (ValueError,KeyError,TypeError) as exc:
         return jsonify(error=str(exc)),400

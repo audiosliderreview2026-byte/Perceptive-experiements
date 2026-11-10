@@ -15,10 +15,14 @@ def export(database, output):
     with sqlite3.connect(database) as conn, open(output,'w') as stream:
         conn.row_factory=sqlite3.Row
         has_assignments=conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='phase_assignments'").fetchone()
-        validity={(r[0],r[1]):bool(r[2]) for r in conn.execute('SELECT prolific_id,phase,valid FROM phase_assignments')} if has_assignments else {}
+        assignments={(r['prolific_id'],r['phase']):dict(r) for r in conn.execute('SELECT * FROM phase_assignments')} if has_assignments else {}
         for row in conn.execute('SELECT * FROM research_events ORDER BY created_at,event_id'):
             record=dict(row); record['payload']=json.loads(record['payload']);record['stimuli']=json.loads(record['stimuli'])
-            record['valid']=validity.get((record['prolific_id'],record['phase']),True)
+            assignment=assignments.get((record['prolific_id'],record['phase']),{})
+            record['valid']=bool(assignment.get('valid',True))
+            record['invalid_reason']=assignment.get('invalid_reason')
+            record['invalidated_at']=assignment.get('invalidated_at')
+            record['server_verified']=record['payload'].get('server_verified',False)
             record['STUDY_ID']=record['payload'].get('STUDY_ID')
             record['SESSION_ID']=record['payload'].get('SESSION_ID')
             record['answers']={key:record['payload'][key] for key in question_keys if key in record['payload']}

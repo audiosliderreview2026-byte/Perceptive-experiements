@@ -716,6 +716,9 @@ async function saveTrialToServer({
     section    : section,
     sound_id   : soundId,
     training   : training,
+    session_token: window.STUDY_SESSION_TOKEN,
+    trial_ticket: studyTrialTickets[trialKey],
+    submission_id: crypto.randomUUID(),
     payload    : { ...payload, ...prolificStudyMetadata(), userID: window.ASSIGNED_USER_ID },
   };
 
@@ -792,6 +795,7 @@ async function loadCompletedTrials(phase) {
     url,
     {
       cache: 'no-store',
+      headers: { 'X-Study-Token': window.STUDY_SESSION_TOKEN || '' },
     }
   );
 
@@ -826,6 +830,7 @@ async function loadPhaseSession(phase) {
     url,
     {
       cache: 'no-store',
+      headers: { 'X-Study-Token': window.STUDY_SESSION_TOKEN || '' },
     }
   );
 
@@ -861,6 +866,7 @@ async function createPhaseSession(
         prolificID: window.PROLIFIC_ID,
         phase      : String(phase),
         trial_order: trialOrder,
+        session_token: window.STUDY_SESSION_TOKEN,
       }),
     }
   );
@@ -1528,8 +1534,8 @@ function buildCalibrationTrials(completedKeys = new Set()) {
     return true;
   } };
   const trials = [];
-  if (!completedKeys.has('calibration|volume')) trials.push(volumeLoop, locked);
-  if (!completedKeys.has('calibration|stereo')) trials.push(stereoLoop);
+  if (!completedKeys.has('calibration|volume')) trials.push(buildStudyPermission('calibration|volume'), volumeLoop, locked);
+  if (!completedKeys.has('calibration|stereo')) trials.push(buildStudyPermission('calibration|stereo'), stereoLoop);
   if (trials.length) trials.push({ type: jsPsychHtmlButtonResponse,
     stimulus: '<div class="screen"><h2>Audio Calibration complete</h2></div>',
     choices: ['Start training'], data: { step: 'calibration_complete' },
@@ -2376,6 +2382,8 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
     const participant = await registration.json();
     if (!registration.ok) throw new Error(participant.error || 'Participant registration failed');
     const userID = participant.userID;
+    window.STUDY_SESSION_TOKEN = participant.session_token;
+    archiveLegacyStudyJobs();
     window.ASSIGNED_USER_ID = userID;
     const locationURL = new URL(window.location.href);
     locationURL.searchParams.set('userID', userID);
@@ -2405,7 +2413,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
     if (!session?.trial_order || assignmentSignature(session.trial_order) !== assignmentSignature(assigned)) {
       throw new Error('This Prolific ID already has a different saved assignment. Use its original userID, or a fresh test prolificID.');
     }
-    const fixedTraining = trainingManifest[phase];
+    const fixedTraining = participant.training || trainingManifest[phase];
     if (!Array.isArray(fixedTraining) || fixedTraining.length !== (phase === 'phase1' ? 4 : 3)) {
       throw new Error('Training manifest must contain four examples for phase 1 and three for phases 2 and 3.');
     }
@@ -2459,7 +2467,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
       <p>If you get disconnected, use the link in Prolific to reconnect. You will automatically continue where you left off.</p></div>`,
       choices: ['Start practice'], on_load() { setStudyStage('Practice'); } });
     timeline.push(...training.map(trial => ({
-      timeline: buildTrial(trial, questions, true),
+      timeline: [buildStudyPermission(experimentalTrialKey('training', trial.trialIndex)), ...buildTrial(trial, questions, true)],
       on_timeline_start() { setStudyStage(`Practice ${plan.training.indexOf(trial) + 1} / ${plan.training.length}`); },
     })));
     if (training.length) timeline.push({ type: jsPsychHtmlButtonResponse,
@@ -2486,14 +2494,14 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
           emittedCatches.add(check.id);
         }
       }
-      timeline.push({ timeline: buildTrial(trial, questions, false), on_timeline_start() { setStudyStage(null); } });
+      timeline.push({ timeline: [buildStudyPermission(experimentalTrialKey('test', trial.trialIndex)), ...buildTrial(trial, questions, false)], on_timeline_start() { setStudyStage(null); } });
     }
     for (const check of catches) {
       if (!emittedCatches.has(check.id) && !completed.has(`attention|${check.id}`)) {
         timeline.push(buildAttentionCheck(check, phase));
       }
     }
-    if (!completed.has('feedback|final')) timeline.push(buildFinalFeedback(phase));
+    if (!completed.has('feedback|final')) timeline.push({ timeline: [buildStudyPermission('feedback|final'), buildFinalFeedback(phase)] });
     console.info(`[${phase}] USER ID ${userID}: ${plan.test.length} assigned, ${remaining.length} remaining.`);
     await jsPsych.run(timeline);
   } catch (error) {
@@ -2557,7 +2565,7 @@ function attentionCheckSchedule(phase, userID, count) {
 
 function buildAttentionCheck(check, phase) {
   const labels = ['Left', 'Middle', 'Right'];
-  return {
+  return { timeline: [buildStudyPermission(`attention|${check.id}`), {
     type: jsPsychHtmlButtonResponse,
     stimulus: `<div class="screen"><h3>Please read carefully</h3><p>For this question, select <strong>${labels[check.expected]}</strong>.</p></div>`,
     choices: labels,
@@ -2569,7 +2577,7 @@ function buildAttentionCheck(check, phase) {
         await saveTrialToServer({ phase, trialKey: `attention|${check.id}`, section: 'attention', payload: data });
       } catch (error) { showExperimentLoadingError(error); }
     },
-  };
+  }] };
 }
 
 // Durable same-browser outbox. Each request is persisted before transmission.
@@ -2587,12 +2595,26 @@ function showSavingStatus() {
 }
 async function transmitStudyJob(job) {
   const response = await fetch(job.url, job.options);
-  if (!response.ok) throw new Error(`Saving failed: HTTP ${response.status}`);
+  if (!response.ok) {
+    const detail = await response.json().catch(() => ({}));
+    if (response.status === 425 && Number.isFinite(detail.retry_after_seconds)) {
+      await new Promise(resolve => setTimeout(resolve, Math.min(30000, Math.max(100, detail.retry_after_seconds * 1000 + 150))));
+      return transmitStudyJob(job);
+    }
+    if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+      archiveStudyJobs([job], 'server_rejected');
+      putStudyOutbox(readStudyOutbox().filter(item => item.id !== job.id));
+    }
+    throw new Error(detail.error || `Saving failed: HTTP ${response.status}`);
+  }
   putStudyOutbox(readStudyOutbox().filter(item => item.id !== job.id));
   if (!readStudyOutbox().length) document.getElementById('study-save-status')?.remove();
   return response;
 }
 async function durableStudyPost(url, options) {
+  const body = JSON.parse(options.body);
+  body.session_token = body.session_token || window.STUDY_SESSION_TOKEN;
+  options = { ...options, body: JSON.stringify(body) };
   const job = { id: crypto.randomUUID(), url, options };
   putStudyOutbox([...readStudyOutbox(), job]);
   return transmitStudyJob(job);
@@ -2679,6 +2701,61 @@ function buildFinalFeedback(phase) {
       if (window.STUDY_COMPLETION_PREVIEW) return;
       saveTrialToServer({ phase, trialKey: 'feedback|final', section: 'feedback', training: false, payload: data })
         .catch(error => console.error('Feedback save failed:', error));
+    },
+  };
+}
+
+
+// Local archives preserve old/offline or rejected responses for recovery, but cannot
+// silently promote unverified answers to completed experimental trials.
+function archiveStudyJobs(jobs, reason) {
+  const key = 'listening-study-unverified-outbox-v1';
+  const previous = JSON.parse(localStorage.getItem(key) || '[]');
+  const known = new Set(previous.map(job => job.id));
+  localStorage.setItem(key, JSON.stringify([...previous, ...jobs.filter(job => !known.has(job.id)).map(job => ({...job, archive_reason: reason}))]));
+}
+function archiveLegacyStudyJobs() {
+  const old = readStudyOutbox().filter(job => {
+    const data = JSON.parse(job.options.body);
+    return !data.session_token || (job.url === '/api/save-trial' && !data.trial_ticket);
+  });
+  if (old.length) {
+    archiveStudyJobs(old, 'predates_server_permissions');
+    const ids = new Set(old.map(job => job.id));
+    putStudyOutbox(readStudyOutbox().filter(job => !ids.has(job.id)));
+    console.warn('Older unsent responses retained in listening-study-unverified-outbox-v1. Unfinished trials will be replayed.');
+  }
+}
+const studyTrialTickets = {};
+function buildStudyPermission(trialKey) {
+  return {
+    type: jsPsychHtmlButtonResponse,
+    stimulus: '<div class="screen"><p id="permission-status" role="status">Preparing the next screen…</p><button id="permission-retry" type="button" class="jspsych-btn" hidden>Try again</button></div>',
+    choices: [],
+    data: { step: 'server_permission' },
+    on_load() {
+      const retry = document.getElementById('permission-retry');
+      const prepare = async () => {
+        retry.hidden = true;
+        try {
+          // Prevent progression until previous completed responses are confirmed.
+          await flushStudyOutbox();
+          const response = await fetch('/api/trial/begin', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ prolificID: window.PROLIFIC_ID, phase: window.EXPERIMENT_PHASE,
+              trial_key: trialKey, session_token: window.STUDY_SESSION_TOKEN }),
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error || 'Could not prepare the next trial.');
+          studyTrialTickets[trialKey] = result.ticket;
+          jsPsych.finishTrial({ trial_key: trialKey });
+        } catch (error) {
+          document.getElementById('permission-status').textContent = error.message + ' Check your connection; reload this page if another tab has progressed.';
+          retry.hidden = false;
+        }
+      };
+      retry.onclick = prepare;
+      prepare();
     },
   };
 }

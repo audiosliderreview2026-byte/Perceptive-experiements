@@ -98,7 +98,12 @@ def set_validity(prolific_id, phase, valid):
         row=conn.execute('SELECT user_id FROM phase_assignments WHERE prolific_id=? AND phase=?',(prolific_id,phase)).fetchone()
         if row is None: raise ValueError('No assignment found for this participant and phase')
         try:
-            conn.execute('UPDATE phase_assignments SET valid=? WHERE prolific_id=? AND phase=?',(int(bool(valid)),prolific_id,phase))
+            columns={r[1] for r in conn.execute('PRAGMA table_info(phase_assignments)')}
+            if 'invalid_reason' in columns:
+                conn.execute('UPDATE phase_assignments SET valid=?,invalid_reason=?,invalidated_at=CASE WHEN ? THEN NULL ELSE CURRENT_TIMESTAMP END WHERE prolific_id=? AND phase=?',
+                             (int(bool(valid)),None if valid else 'manual',int(bool(valid)),prolific_id,phase))
+            else:
+                conn.execute('UPDATE phase_assignments SET valid=? WHERE prolific_id=? AND phase=?',(int(bool(valid)),prolific_id,phase))
         except sqlite3.IntegrityError as exc:
             raise ValueError('This USER ID has already been reassigned in this phase; cannot mark both assignments valid') from exc
     return {'prolificID':prolific_id,'phase':phase,'userID':str(row[0]),'valid':bool(valid)}
