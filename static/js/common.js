@@ -2406,9 +2406,11 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
         choices: ['Resume'] });
     } else {
       timeline.push({ type: jsPsychHtmlButtonResponse,
-        stimulus: `<div class="screen"><h2>Welcome to this listening study</h2>
+        stimulus: `<div class="screen"><h2>Welcome to this scientific listening study,</h2>
+        <p>Please read these instructions carefully before starting.</p>
         <ul class="instruction-list"><li>Wear <strong>headphones or earphones in both ears</strong> (charged if wireless) and activate noise cancellation if available.</li>
-        <li>Make sure you <strong>won’t be disturbed</strong> for the duration of the experiment: tell the people around you, close all other applications on your device, and put your phone away and in “do not disturb” mode.</li>
+        <li>Make sure you are on a computer, laptop or tablet (not a smartphone) and in a quiet place.</li>
+        <li>Make sure you won't be disturbed for the duration of the experiment (tell the people around you that you should not be disturbed, close all other applications on your device, put you phone away and in "do not disturb" mode, etc.)</li>
         <li>Put this browser window in <strong>full screen</strong>.</li></ul>
         <p>The study has three stages: <strong>calibration → practice → main study</strong>. It should last about <strong>1 hour</strong>.</p>
         <p>For this study to yield valid scientific conclusions, we rely on you to follow the instructions, listen carefully to the sounds and answer earnestly to the questions. We included various types of technical and attention checks and reserve the right to reject your submission should you not participate responsibly.</p><p>Thank you for participating!</p></div>`,
