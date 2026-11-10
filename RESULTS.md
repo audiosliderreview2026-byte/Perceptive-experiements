@@ -26,3 +26,13 @@ answers = pd.json_normalize(final.answers)
 ```
 
 Training WAVs and manifest are in `static/stimulis/training/`. Experimental plans remain in `trial_orders_output/`. Database backups and exported datasets contain participant identifiers; they are research data, not application assets.
+
+## Questionnaire revision (2026-11-10)
+
+Phase 1 now presents audibility, artefacts (`integrite`) and realism (`plausibilite`) together, in that order. Both sliders require movement for audible trials. Inaudible trials retain their audibility answer and save null slider values. The answer keys and 0–100 direction are unchanged; `questionnaire_version`, `question_order`, and `audibility_labels` identify the revised presentation. Phase 1 has four fixed practice examples; other phases retain three.
+
+At the end of each phase, `feedback|final` is saved in `trial_data` under section `feedback`, and in `research_events` with step/section `feedback`. Fields: `volume_changed` (boolean), `volume_change_reason` (required nonblank text for yes, null for no), and `general_feedback` (optional text). The same durable retry queue protects feedback; completed feedback is skipped on resume. These fields are included in JSONL `answers` and the analysis notebook's flattened `answer.*` columns. No database migration is needed.
+
+Volume calibration records all three sample paths. Headphone checks record the actual left/right stimulus and correct answer; the first ear is randomized, and failed attempts alternate ears without announcing the next side.
+
+Phases 2 and 3 use combined audibility/rating forms. Both A/B audibility answers are required; either inaudible answer hides ratings and saves nulls. Audible pairs require both emotion circles (phase 2) or all four sliders (phase 3) to move. Their practice explanations and endpoints follow the questionnaire JSONs. Calibration examples 2/3 are fixed edits with |alpha| > 30; see calibration/sources.json for provenance.

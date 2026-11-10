@@ -1,0 +1,12 @@
+{
+  "extreme_positive.wav": {
+    "source": "/static/stimulis/segments_5s/test_plugin_edits/fast_dress_glass_chunk_036__edit_26__alpha_p41p685126__first_0-5s.wav",
+    "alpha": 41.685126,
+    "durationSeconds": 5
+  },
+  "extreme_negative.wav": {
+    "source": "/static/stimulis/segments_5s/test_plugin_edits/slow_boots_hay_chunk_039__edit_24__alpha_m32p460260__first_0-5s.wav",
+    "alpha": -32.46026,
+    "durationSeconds": 5
+  }
+}

@@ -1,14 +1,14 @@
 [
   {
     "key": "Emotion_A",
-    "text": "Does the first sound seem more calm or more agitated?",
-    "left": "Very calm",
-    "right": "Very agitated"
+    "text": "How did sound A feel compared to sound B?",
+    "left": "Calm, relaxed, quiet",
+    "right": "Angry, aggressive, violent"
   },
   {
     "key": "Emotion_B",
-    "text": "Does the second sound seem more calm or more agitated?",
-    "left": "Very calm",
-    "right": "Very agitated"
+    "text": "How did sound A feel compared to sound B?",
+    "left": "Calm, relaxed, quiet",
+    "right": "Angry, aggressive, violent"
   }
 ]

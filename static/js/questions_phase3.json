@@ -8,7 +8,7 @@
   },
   {
     "key": "shoe_type",
-    "text": "Did it sound to you like the footsteps in sound A and sound B were produced by the same type of shoes (for example, snearkers, boots, heels, etc.)?",
+    "text": "Did it sound to you like the footsteps in sound A and sound B were produced by the same type of shoes (for example, sneakers, boots, heels, etc.)?",
     "left": "Yes, completely",
     "middle": "I don't know",
     "right": "Not at all"

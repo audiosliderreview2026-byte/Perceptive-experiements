@@ -242,6 +242,21 @@
       "trialIndex": 2,
       "training": true,
       "trialKey": "phase1:training:2"
+    },
+    {
+      "audioPath": "/static/stimulis/training/phase1/04_artefacts.wav",
+      "durationSeconds": 5,
+      "soundId": "04_artefacts",
+      "soundType": "training",
+      "sourceId": "clip_08_7m10s_residual",
+      "stimType": "edited",
+      "alpha": -0.643934,
+      "context": "isolated",
+      "condition": "youtube",
+      "method": "semantic_editor",
+      "trialIndex": 3,
+      "training": true,
+      "trialKey": "phase1:training:3"
     }
   ],
   "phase3": [

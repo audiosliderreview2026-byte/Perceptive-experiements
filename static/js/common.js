@@ -1028,6 +1028,11 @@ function incrementExperimentProgress() {
 }
 
 
+let experimentStageLabel = null;
+function setStudyStage(label = null) {
+  experimentStageLabel = label;
+  updateExperimentProgressDisplay();
+}
 function updateExperimentProgressDisplay() {
 
   let counter =
@@ -1063,7 +1068,7 @@ function updateExperimentProgressDisplay() {
   }
 
   counter.textContent =
-    `${experimentProgress.completed} / ${experimentProgress.total}`;
+    experimentStageLabel || `${experimentProgress.completed} / ${experimentProgress.total}`;
 }
 
 
@@ -1358,35 +1363,9 @@ function makeJsPsych(
 // GENERIC LISTENING SCREEN
 // ==========================================================
 
-function listenHtml({
-  label,
-  role = null,
-  isTraining = false,
-  tagLabel = 'Training',
-} = {}) {
-
-  const tag =
-    isTraining
-      ? `<div class="screen-tag">${tagLabel}</div>`
-      : '';
-
-  const roleTag =
-    role
-      ? `<div class="sound-role">${role}</div>`
-      : '';
-
-  return (
-    '<div class="listen-wrap">' +
-    tag +
-    `<div class="sound-label">${label}</div>` +
-    roleTag +
-    '<div class="listen-hint">' +
-    'Listen carefully before continuing.' +
-    '</div>' +
-    '</div>'
-  );
+function listenHtml({ role = null } = {}) {
+  return `<div class="listen-wrap">${role ? `<div class="sound-role">${role}</div>` : ''}<div class="listen-hint">Listen carefully before continuing.</div></div>`;
 }
-
 
 // ==========================================================
 // GENERIC LISTENING TRIAL
@@ -1443,1176 +1422,113 @@ function buildListenTrial({
 // calibration questions that have already been answered.
 // ==========================================================
 
-function buildCalibrationTrials(
-  completedKeys = new Set()
-) {
-
-  // --------------------------------------------------------
-  // Calibration audio
-  // --------------------------------------------------------
-
-  // Recommended:
-  // 5–8 seconds of stereo pink noise at a moderate level.
-  const volumeAudio =
-    '/static/stimulis/calibration/pink_noise.wav';
-
-  // Sound present only in the LEFT channel.
-  const stereoAudio =
-    '/static/stimulis/calibration/left.wav';
-
-  function setCalibrationProgressDisplay(
-    step
-  ) {
-
-    updateExperimentProgressDisplay();
-
-
-    const counter =
-      document.getElementById(
-        'experiment-progress-counter'
-      );
-
-
-    if (counter) {
-
-      counter.textContent =
-        `Calibration ${step} / 2`;
-    }
-  }
-  // --------------------------------------------------------
-  // Currently playing replay audio
-  // --------------------------------------------------------
-  //
-  // jsPsych handles the initial playback itself.
-  //
-  // We separately keep track of audio created by the Replay
-  // button so that it can always be stopped before the
-  // participant leaves the current calibration screen.
-  // --------------------------------------------------------
-
-  let replayAudio =
-    null;
-
-
-  function stopReplayAudio() {
-
-    if (!replayAudio) {
-      return;
-    }
-
-
-    try {
-
-      replayAudio.pause();
-
-      replayAudio.currentTime =
-        0;
-
-    } catch (error) {
-
-      console.warn(
-        'Could not stop calibration replay audio:',
-        error
-      );
-    }
-
-
-    replayAudio =
-      null;
-  }
-
-
-  // --------------------------------------------------------
-  // Calibration HTML
-  // --------------------------------------------------------
-
-  function calibrationScreen({
-    title,
-    text,
-    question,
-    audioPath,
-    feedbackId,
-  }) {
-
-    return `
-      <div class="screen">
-
-        <div class="screen-tag">
-          Audio calibration
-        </div>
-
-        <h2>
-          ${title}
-        </h2>
-
-        ${text}
-
-        <div
-          style="
-            margin:24px 0 18px 0;
-          "
-        >
-
-          <button
-            type="button"
-            class="jspsych-btn calibration-replay-btn"
-            data-audio="${audioPath}"
-          >
-            ▶ Replay sound
-          </button>
-
-        </div>
-
-        <div
-          style="
-            margin-top:20px;
-          "
-        >
-
-          <p
-            style="
-              margin-bottom:12px;
-            "
-          >
-            <strong>
-              ${question}
-            </strong>
-          </p>
-
-          <!--
-            jsPsych's answer buttons will be moved here
-            when the trial loads.
-          -->
-          <div
-            id="calibration-answer-container"
-            style="
-              display:flex;
-              justify-content:center;
-              align-items:center;
-              gap:10px;
-              flex-wrap:wrap;
-              margin-top:8px;
-            "
-          ></div>
-
-          <div
-            id="${feedbackId}"
-            style="
-              min-height:24px;
-              margin-top:12px;
-            "
-          ></div>
-
-        </div>
-
-      </div>
-    `;
-  }
-
-
-  // --------------------------------------------------------
-  // Replay functionality
-  // --------------------------------------------------------
-
-  function enableReplayButton() {
-
-    const button =
-      document.querySelector(
-        '.calibration-replay-btn'
-      );
-
-
-    if (!button) {
-      return;
-    }
-
-
-    button.addEventListener(
-      'click',
-      event => {
-
-        // Prevent the replay button from doing anything
-        // other than replaying the calibration sound.
-        event.preventDefault();
-
-
-        // If a replay is already running, stop it first.
-        stopReplayAudio();
-
-
-        const audioPath =
-          button.dataset.audio;
-
-
-        replayAudio =
-          new Audio(
-            audioPath
-          );
-
-
-        button.disabled =
-          true;
-
-        button.textContent =
-          'Playing…';
-
-
-        replayAudio
-          .play()
-          .catch(
-            error => {
-
-              console.error(
-                'Could not replay calibration audio:',
-                error
-              );
-
-
-              button.disabled =
-                false;
-
-              button.textContent =
-                '▶ Replay sound';
-
-
-              replayAudio =
-                null;
-            }
-          );
-
-
-        replayAudio.addEventListener(
-          'ended',
-          () => {
-
-            button.disabled =
-              false;
-
-            button.textContent =
-              '▶ Replay sound';
-
-            replayAudio =
-              null;
-          }
-        );
-
-
-        replayAudio.addEventListener(
-          'error',
-          () => {
-
-            button.disabled =
-              false;
-
-            button.textContent =
-              '▶ Replay sound';
-
-
-            console.error(
-              'Could not replay calibration audio:',
-              audioPath
-            );
-
-
-            replayAudio =
-              null;
-          }
-        );
-      }
-    );
-  }
-
-
-  // --------------------------------------------------------
-  // Move jsPsych answer buttons directly below question
-  // --------------------------------------------------------
-  //
-  // jsPsychAudioButtonResponse normally puts the response
-  // buttons outside the prompt.
-  //
-  // We move its button group immediately below our question
-  // so that the visual order becomes:
-  //
-  //     question
-  //     answer buttons
-  //     feedback
-  //
-  // --------------------------------------------------------
-
-  function moveAnswerButtonsBelowQuestion() {
-
-    const destination =
-      document.getElementById(
-        'calibration-answer-container'
-      );
-
-
-    if (!destination) {
-
-      console.warn(
-        'Calibration answer container not found.'
-      );
-
-      return;
-    }
-
-
-    // jsPsych 8 AudioButtonResponse normally creates
-    // a button group with this ID.
-    let buttonGroup =
-      document.getElementById(
-        'jspsych-audio-button-response-btngroup'
-      );
-
-
-    // Fallback for slightly different plugin versions.
-    if (!buttonGroup) {
-
-      buttonGroup =
-        document.querySelector(
-          '.jspsych-audio-button-response-btngroup'
-        );
-    }
-
-
-    if (!buttonGroup) {
-
-      console.warn(
-        'jsPsych audio response button group not found.'
-      );
-
-      return;
-    }
-
-
-    destination.appendChild(
-      buttonGroup
-    );
-  }
-
-
-  // --------------------------------------------------------
-  // Stop replay as soon as an answer is clicked
-  // --------------------------------------------------------
-
-  function stopReplayOnAnswer() {
-
-    const buttonGroup =
-      document.getElementById(
-        'jspsych-audio-button-response-btngroup'
-      );
-
-
-    if (!buttonGroup) {
-      return;
-    }
-
-
-    const answerButtons =
-      buttonGroup.querySelectorAll(
-        'button'
-      );
-
-
-    answerButtons.forEach(
-      button => {
-
-        button.addEventListener(
-          'click',
-          () => {
-
-            stopReplayAudio();
-          }
-        );
-      }
-    );
-  }
-
-
-
-  // ========================================================
-  // STEP 1 — LISTENING LEVEL
-  // ========================================================
-  //
-  // Unlike the headphone test, this trial does NOT start
-  // playing automatically.
-  //
-  // Flow:
-  //   1. Read instructions
-  //   2. Click "Play sound"
-  //   3. Sound plays
-  //   4. Answer choices appear
-  //   5. Replay remains available
-  //
-  // ========================================================
-
-  const volumeCheck = {
-
-    type:
-      jsPsychHtmlButtonResponse,
-
-
-    stimulus: `
-      <div class="screen">
-
-        <div class="screen-tag">
-          Audio calibration
-        </div>
-
-        <h2>
-          1. Set your listening volume
-        </h2>
-
-        <p>
-          Please put on your
-          <strong>headphones or earphones</strong>
-          and make sure you are in a quiet environment.
-        </p>
-
-        <p>
-          You will hear a short calibration sound.
-          Use your computer or device volume control to
-          adjust it to a
-          <strong>comfortable listening level</strong>.
-        </p>
-
-        <p>
-          The sound should be
-          <strong>clearly audible without feeling loud</strong>.
-          It should feel comfortable to listen to for an
-          extended period of time.
-        </p>
-
-        <p>
-          You may replay the sound as many times as
-          necessary while adjusting your volume.
-        </p>
-
-
-        <!-- Play / Replay -->
-
-        <div
-          style="
-            margin:28px 0 24px 0;
-          "
-        >
-
-          <button
-            type="button"
-            id="volume-play-button"
-            class="jspsych-btn"
-          >
-            ▶ Play sound
-          </button>
-
-        </div>
-
-
-        <!-- Question + answers.
-            Hidden until sound has been played once. -->
-
-        <div
-          id="volume-answer-section"
-          style="
-            display:none;
-            margin-top:20px;
-          "
-        >
-
-          <p
-            style="
-              margin-bottom:12px;
-            "
-          >
-            <strong>
-              How would you describe the current volume?
-            </strong>
-          </p>
-
-          <div
-            style="
-              display:flex;
-              justify-content:center;
-              gap:10px;
-              flex-wrap:wrap;
-            "
-          >
-
-            <button
-              type="button"
-              class="jspsych-btn volume-answer-btn"
-              data-response="0"
-            >
-              Too quiet
-            </button>
-
-            <button
-              type="button"
-              class="jspsych-btn volume-answer-btn"
-              data-response="1"
-            >
-              Comfortable
-            </button>
-
-            <button
-              type="button"
-              class="jspsych-btn volume-answer-btn"
-              data-response="2"
-            >
-              Too loud
-            </button>
-
-          </div>
-
-        </div>
-
-      </div>
-    `,
-
-
-    // jsPsychHtmlButtonResponse expects choices, but we are
-    // providing our own buttons because their visibility is
-    // controlled manually.
-    choices:
-      [],
-
-
-    data: {
-
-      step:
-        'calibration',
-
-      calibration_test:
-        'volume',
-    },
-
-
+const CALIBRATION_AUDIO = [
+  '/static/stimulis/calibration/pink_noise.wav',
+  '/static/stimulis/calibration/extreme_positive.wav',
+  '/static/stimulis/calibration/extreme_negative.wav',
+];
+function buildCalibrationTrials(completedKeys = new Set()) {
+  let replay = null;
+  const stop = () => { if (replay) { replay.pause(); replay.currentTime = 0; replay = null; } };
+  const save = (key, payload) => saveTrialToServer({
+    phase: window.EXPERIMENT_PHASE, trialKey: `calibration|${key}`,
+    section: 'calibration', training: false, payload,
+  }).catch(error => console.error('Calibration save failed:', error));
+  const volume = {
+    type: jsPsychHtmlButtonResponse,
+    stimulus: `<div class="screen"><h2>Audio Calibration</h2>
+      <p>As a reminder, wear <strong>headphones or earphones</strong> and be in a <strong>quiet environment</strong>.</p>
+      <p>Listen to all three sounds below: a calibration noise and two example recordings. Use your device volume control to find a <strong>comfortable listening level</strong> for all three.</p>
+      <p>The sounds should be clearly audible without feeling too loud. Choose a level that stays comfortable for all three recordings. You may replay these sounds while adjusting your volume.</p>
+      <div class="calibration-samples">${CALIBRATION_AUDIO.map((path, i) => `<button type="button" class="jspsych-btn calibration-sample" data-index="${i}">▶ Play sound ${i + 1}</button>`).join('')}</div>
+      <p id="calibration-play-status" role="status">Listen to each sound before answering.</p>
+      <p><strong>How would you describe the current volume?</strong></p></div>`,
+    choices: ['Too quiet', 'Comfortable', 'Too loud'],
+    data: { step: 'calibration', calibration_test: 'volume', audio_paths: CALIBRATION_AUDIO, instructions_version: '2026-11-10' },
     on_load() {
-
-      setCalibrationProgressDisplay(
-        1
-      );
-
-
-      const playButton =
-        document.getElementById(
-          'volume-play-button'
-        );
-
-
-      const answerSection =
-        document.getElementById(
-          'volume-answer-section'
-        );
-
-
-      const answerButtons =
-        document.querySelectorAll(
-          '.volume-answer-btn'
-        );
-
-
-      let hasPlayedOnce =
-        false;
-
-
-      // ------------------------------------------------------
-      // PLAY / REPLAY
-      // ------------------------------------------------------
-
-      playButton.addEventListener(
-        'click',
-        () => {
-
-          // Stop a previous replay if necessary.
-          stopReplayAudio();
-
-
-          replayAudio =
-            new Audio(
-              volumeAudio
-            );
-
-
-          playButton.disabled =
-            true;
-
-          playButton.textContent =
-            'Playing…';
-
-
-          replayAudio
-            .play()
-            .then(
-              () => {
-
-                // The first successful click permanently
-                // changes this trial from "Play" to "Replay".
-                hasPlayedOnce =
-                  true;
-              }
-            )
-            .catch(
-              error => {
-
-                console.error(
-                  'Could not play calibration audio:',
-                  error
-                );
-
-
-                playButton.disabled =
-                  false;
-
-                playButton.textContent =
-                  hasPlayedOnce
-                    ? '▶ Replay sound'
-                    : '▶ Play sound';
-
-
-                replayAudio =
-                  null;
-              }
-            );
-
-
-          replayAudio.addEventListener(
-            'ended',
-            () => {
-
-              replayAudio =
-                null;
-
-
-              playButton.disabled =
-                false;
-
-              playButton.textContent =
-                '▶ Replay sound';
-
-
-              // Only now reveal the question answers.
-              answerSection.style.display =
-                'block';
-            }
-          );
-
-
-          replayAudio.addEventListener(
-            'error',
-            () => {
-
-              console.error(
-                'Could not play calibration audio:',
-                volumeAudio
-              );
-
-
-              replayAudio =
-                null;
-
-
-              playButton.disabled =
-                false;
-
-              playButton.textContent =
-                hasPlayedOnce
-                  ? '▶ Replay sound'
-                  : '▶ Play sound';
-            }
-          );
-        }
-      );
-
-
-      // ------------------------------------------------------
-      // ANSWERS
-      // ------------------------------------------------------
-
-      answerButtons.forEach(
-        button => {
-
-          button.addEventListener(
-            'click',
-            () => {
-
-              // In case the participant answers while a replay
-              // is still playing, stop it immediately.
-              stopReplayAudio();
-
-
-              const response =
-                Number(
-                  button.dataset.response
-                );
-
-
-              jsPsych.finishTrial({
-
-                step:
-                  'calibration',
-
-                calibration_test:
-                  'volume',
-
-                response:
-                  response,
-
-                answer:
-                  [
-                    'too_quiet',
-                    'comfortable',
-                    'too_loud',
-                  ][response],
-
-                acceptable_volume:
-                  response === 1,
-              });
-            }
-          );
-        }
-      );
+      setStudyStage('Calibration 1 / 2');
+      const heard = new Set();
+      const answers = [...document.querySelectorAll('#jspsych-html-button-response-btngroup button')];
+      const plays = [...document.querySelectorAll('.calibration-sample')];
+      const status = document.getElementById('calibration-play-status');
+      answers.forEach(button => button.disabled = true);
+      plays.forEach(button => button.addEventListener('click', () => {
+        stop();
+        const index = Number(button.dataset.index);
+        plays.forEach(item => item.disabled = true);
+        answers.forEach(item => item.disabled = true);
+        status.textContent = `Playing sound ${index + 1}…`;
+        const audio = replay = new Audio(CALIBRATION_AUDIO[index]);
+        const failed = () => {
+          stop(); plays.forEach(item => item.disabled = false);
+          status.textContent = 'Audio could not play. Please try again.';
+        };
+        audio.addEventListener('error', failed, { once: true });
+        audio.addEventListener('ended', () => {
+          heard.add(index); replay = null;
+          button.textContent = `↻ Replay sound ${index + 1} ✓`;
+          plays.forEach(item => item.disabled = false);
+          answers.forEach(item => item.disabled = heard.size !== CALIBRATION_AUDIO.length);
+          status.textContent = heard.size === CALIBRATION_AUDIO.length ? 'All three sounds played. You may answer or replay a sound.' : `${heard.size} / ${CALIBRATION_AUDIO.length} sounds played.`;
+        }, { once: true });
+        audio.play().catch(failed);
+      }));
     },
-
-
     on_finish(data) {
-
-      // Extra safety in case any audio still exists when
-      // jsPsych closes the trial.
-      stopReplayAudio();
+      stop(); data.answer = ['too_quiet', 'comfortable', 'too_loud'][data.response];
+      data.acceptable_volume = data.response === 1;
     },
   };
-
-
-  // --------------------------------------------------------
-  // Volume calibration loop
-  // --------------------------------------------------------
-  //
-  // "Too quiet" / "Too loud":
-  //     repeat calibration.
-  //
-  // "Comfortable":
-  //     save and continue.
-  //
-  // --------------------------------------------------------
-
-  const volumeLoop = {
-
-    timeline: [
-      volumeCheck
-    ],
-
-
-    loop_function(data) {
-
-      const lastTrial =
-        data.values()[0];
-
-
-      if (
-        lastTrial.response === 1
-      ) {
-
-        // Comfortable → calibration accepted.
-
-        saveTrialToServer({
-
-          phase:
-            window.EXPERIMENT_PHASE,
-
-          trialKey:
-            'calibration|volume',
-
-          section:
-            'calibration',
-
-          training:
-            false,
-
-          payload:
-            lastTrial,
-
-        }).catch(
-          error => {
-
-            console.error(
-              'Calibration save failed:',
-              error
-            );
-          }
-        );
-
-
-        return false;
-      }
-
-
-      // Too quiet / Too loud:
-      // show the volume calibration again so that the
-      // participant adjusts the volume and listens again.
-
-      return true;
-    },
+  const volumeLoop = { timeline: [volume], loop_function(data) {
+    const last = data.values().at(-1);
+    if (last.acceptable_volume) { save('volume', last); return false; }
+    return true;
+  } };
+  const locked = {
+    type: jsPsychHtmlButtonResponse,
+    stimulus: `<div class="screen"><h2>Listening volume set ✓</h2><p>Your listening volume is now set.</p><p><strong>Please do not change the volume on your computer, device, or headphones for the rest of the experiment.</strong></p><p>Keeping the same listening level throughout the experiment is important for the scientific validity of the experiment.</p></div>`,
+    choices: ['Continue'], data: { step: 'calibration_volume_confirmed' },
+    on_load() { setStudyStage('Calibration 1 / 2'); },
   };
-
-
-  // ========================================================
-  // STEP 1B — VOLUME LOCK MESSAGE
-  // ========================================================
-  //
-  // This deliberately gets its own screen because this
-  // instruction is important for the validity of the
-  // listening experiment.
-  // ========================================================
-
-  const volumeLocked = {
-
-    type:
-      jsPsychHtmlButtonResponse,
-
-
-    stimulus: `
-      <div class="screen">
-
-        <div class="screen-tag">
-          Audio calibration
-        </div>
-
-        <h2>
-          Listening volume set ✓
-        </h2>
-
-        <p>
-          Your listening volume is now set.
-        </p>
-
-        <p>
-          <strong>
-            Please do not change the volume on your
-            computer, device, or headphones for the rest
-            of the experiment.
-          </strong>
-        </p>
-
-        <p>
-          Keeping the same listening level throughout the
-          experiment is important for comparing your
-          responses across sounds.
-        </p>
-
-      </div>
-    `,
-
-
-    choices: [
-      'Continue'
-    ],
-
-
-    data: {
-
-      step:
-        'calibration_volume_confirmed',
-    },
-  };
-
-
-  // ========================================================
-  // STEP 2 — HEADPHONE / STEREO CHECK
-  // ========================================================
-
-  const stereoCheck = {
-
-    type:
-      jsPsychAudioButtonResponse,
-
-    stimulus:
-      stereoAudio,
-
-
-    prompt:
-      calibrationScreen({
-
-        title:
-          '2. Headphone check',
-
-        text: `
-          <p>
-            You will now hear another short sound.
-          </p>
-
-          <p>
-            Keep your
-            <strong>headphones or earphones on</strong>
-            and indicate where you hear the sound.
-          </p>
-
-          <p>
-            You may replay this calibration sound if
-            necessary.
-          </p>
-        `,
-
-        question:
-          'Where do you hear the sound?',
-
-        audioPath:
-          stereoAudio,
-
-        feedbackId:
-          'stereo-calibration-feedback',
-      }),
-
-
-    choices: [
-      'Left',
-      'Center',
-      'Right',
-    ],
-
-
-    response_allowed_while_playing:
-      false,
-
-
-    data: {
-
-      step:
-        'calibration',
-
-      calibration_test:
-        'stereo',
-
-      correct_answer:
-        'left',
-    },
-
-
-    on_load() {
-
-      enableReplayButton();
-
-      moveAnswerButtonsBelowQuestion(
-        'stereo-calibration-feedback'
-      );
-
-      stopReplayOnAnswer();
-    },
-
-
+  let side = Math.random() < 0.5 ? 'left' : 'right';
+  let retry = false;
+  const stereo = {
+    type: jsPsychAudioButtonResponse,
+    stimulus: () => `/static/stimulis/calibration/${side}.wav`,
+    prompt: '<div class="screen"><h2>2. Headphone check</h2><p>Keep your headphones or earphones on and indicate where you hear the sound.</p><p><strong>Where do you hear the sound?</strong></p></div>',
+    choices: ['Left', 'Center', 'Right'], response_allowed_while_playing: false,
+    data: { step: 'calibration', calibration_test: 'stereo' },
+    on_load() { setStudyStage('Calibration 2 / 2'); },
     on_finish(data) {
-
-      stopReplayAudio();
-
-
-      const answers = [
-        'left',
-        'center',
-        'right',
-      ];
-
-
-      data.answer =
-        answers[
-          data.response
-        ];
-
-
-      data.correct =
-        data.response === 0;
+      data.correct_answer = side;
+      data.audioPath = `/static/stimulis/calibration/${side}.wav`;
+      data.answer = ['left', 'center', 'right'][data.response];
+      data.correct = data.answer === side;
     },
   };
-
-
-  // --------------------------------------------------------
-  // Headphone-check loop
-  // --------------------------------------------------------
-  //
-  // We only save calibration|stereo when the participant
-  // gives the correct answer.
-  //
-  // An incorrect response simply repeats the headphone
-  // check.
-  // --------------------------------------------------------
-
-  const stereoLoop = {
-
-    timeline: [
-      stereoCheck
-    ],
-
-
-    loop_function(data) {
-
-      const lastTrial =
-        data.values()[0];
-
-
-      if (
-        lastTrial.response === 0
-      ) {
-
-        saveTrialToServer({
-
-          phase:
-            window.EXPERIMENT_PHASE,
-
-          trialKey:
-            'calibration|stereo',
-
-          section:
-            'calibration',
-
-          training:
-            false,
-
-          payload:
-            lastTrial,
-
-        }).catch(
-          error => {
-
-            console.error(
-              'Calibration save failed:',
-              error
-            );
-          }
-        );
-
-
-        return false;
-      }
-
-
-      return true;
-    },
+  const retryMessage = {
+    timeline: [{ type: jsPsychHtmlButtonResponse,
+      stimulus: '<div class="screen"><h2>Make sure you are wearing your headphones right</h2><p>Check that the left and right earpieces are in the correct ears.</p></div>',
+      choices: ['Play the sound'], data: { step: 'calibration_stereo_retry' },
+      on_load() { setStudyStage('Calibration 2 / 2'); },
+    }], conditional_function: () => retry,
   };
-
-
-  // ========================================================
-  // CALIBRATION COMPLETE
-  // ========================================================
-
-  const calibrationDone = {
-
-    type:
-      jsPsychHtmlButtonResponse,
-
-
-    stimulus: `
-      <div class="screen">
-
-        <h2>
-          Audio calibration complete ✓
-        </h2>
-
-        <p>
-          Your headphones and listening level are ready.
-        </p>
-
-        <p>
-          Please keep your
-          <strong>headphones or earphones on</strong>
-          throughout the experiment.
-        </p>
-
-        <p>
-          <strong>
-            Do not change your listening volume for the
-            remainder of the experiment.
-          </strong>
-        </p>
-
-        <p>
-          You will now complete
-          <strong>3 training pairs</strong>
-          to familiarize yourself with the task.
-        </p>
-
-        <p>
-          During training and the main experiment,
-          each sound will be played
-          <strong>only once</strong>
-          and cannot be replayed.
-          Please listen carefully.
-        </p>
-
-      </div>
-    `,
-
-
-    choices: [
-      'Start training'
-    ],
-
-
-    data: {
-
-      step:
-        'calibration_complete',
-    },
-  };
-
-
-  // ========================================================
-  // RESUME-AWARE CALIBRATION TIMELINE
-  // ========================================================
-
-  const trials =
-    [];
-
-
-  const needsVolume =
-    !completedKeys.has(
-      'calibration|volume'
-    );
-
-
-  const needsStereo =
-    !completedKeys.has(
-      'calibration|stereo'
-    );
-
-
-  if (needsVolume) {
-
-    trials.push(
-      volumeLoop
-    );
-
-
-    // Only display this immediately after actually performing
-    // the volume calibration in this browser session.
-    trials.push(
-      volumeLocked
-    );
-  }
-
-
-  if (needsStereo) {
-
-    trials.push(
-      stereoLoop
-    );
-  }
-
-
-  // Only show "Calibration complete" if calibration work was
-  // actually required during this browser session.
-  if (
-    needsVolume ||
-    needsStereo
-  ) {
-
-    trials.push(
-      calibrationDone
-    );
-  }
-
-
+  const stereoLoop = { timeline: [retryMessage, stereo], loop_function(data) {
+    const last = data.values().at(-1);
+    if (last.correct) { save('stereo', last); return false; }
+    side = side === 'left' ? 'right' : 'left'; retry = true;
+    return true;
+  } };
+  const trials = [];
+  if (!completedKeys.has('calibration|volume')) trials.push(volumeLoop, locked);
+  if (!completedKeys.has('calibration|stereo')) trials.push(stereoLoop);
+  if (trials.length) trials.push({ type: jsPsychHtmlButtonResponse,
+    stimulus: '<div class="screen"><h2>Audio Calibration complete</h2></div>',
+    choices: ['Start training'], data: { step: 'calibration_complete' },
+    on_load() { setStudyStage('Calibration 2 / 2'); },
+  });
   return trials;
 }
-
 
 // ==========================================================
 // GENERIC QUESTIONNAIRE
@@ -2625,19 +1541,15 @@ function buildSliderSurveyTrial(
     data,
     isTraining = false,
     tagLabel = 'Training',
+    onRatingChange = () => {},
   } = {}
 ) {
 
   const state = {};
+  const moved = new Set();
 
 
-  const tag =
-    isTraining
-      ? `<div
-           class="screen-tag"
-           style="margin-bottom:14px"
-         >${tagLabel}</div>`
-      : '';
+  const tag = '';
 
 
   const html =
@@ -2659,14 +1571,15 @@ function buildSliderSurveyTrial(
                 ${question.left}
               </span>
 
-              <input
+              <div class="rating-track"><input
                 type="range"
                 id="q${index}"
                 class="survey-slider"
                 min="0"
                 max="100"
                 value="50"
-              >
+                aria-label="${question.text}"
+              ><span class="rating-midpoint" aria-hidden="true"></span><span class="rating-midpoint-label">${question.middle || ''}</span></div>
 
               <span class="slider-lbl lbl-right">
                 ${question.right}
@@ -2696,14 +1609,16 @@ function buildSliderSurveyTrial(
     data:
       Object.assign(
         {
-          step: 'ratings',
+          step: 'ratings', questionnaire_version: '2026-11-10',
         },
         data
       ),
 
 
     on_load() {
-
+      moved.clear();
+      const submit = document.querySelector('#jspsych-html-button-response-btngroup button');
+      submit.disabled = true;
       questions.forEach(
         (_, index) => {
           state[index] = 50;
@@ -2725,6 +1640,9 @@ function buildSliderSurveyTrial(
               'input',
               () => {
 
+                moved.add(index);
+                submit.disabled = moved.size !== questions.length;
+                onRatingChange(moved.size === questions.length);
                 state[index] =
                   parseInt(
                     slider.value
@@ -2883,13 +1801,7 @@ function buildTemplatedQuestionTrial(
       );
 
 
-  const tag =
-    isTraining
-      ? `<div
-           class="screen-tag"
-           style="margin-bottom:14px"
-         >${tagLabel}</div>`
-      : '';
+  const tag = '';
 
 
   const html =
@@ -3139,6 +2051,8 @@ function buildRelativeEmotionTrial(
     data,
     isTraining = false,
     tagLabel = 'Training',
+    emotionQuestion = { text: 'How did sound A feel compared to sound B?', left: 'Calm, relaxed, quiet', right: 'Angry, aggressive, violent' },
+    onRatingChange = () => {},
   } = {}
 ) {
 
@@ -3157,26 +2071,21 @@ function buildRelativeEmotionTrial(
   };
 
 
-  const tag =
-    isTraining
-      ? `<div
-           class="screen-tag"
-           style="margin-bottom:14px"
-         >${tagLabel}</div>`
-      : '';
+  const tag = '';
 
 
   const html = `
     <div class="survey-wrap">
       ${tag}
-      <h2 style="font-size:1.5rem;line-height:1.4">How did sound A feel compared to sound B?</h2>
-      <p>Please place both sounds on the scale below, going from <strong>calm, relaxed, quiet</strong> to <strong>angry, aggressive, violent</strong>.</p>
+      <h2 style="font-size:1.5rem;line-height:1.4">${emotionQuestion.text}</h2>
+      <p>Please place both sounds on the scale below, going from <strong>${emotionQuestion.left}</strong> to <strong>${emotionQuestion.right}</strong>.</p>
       <p><strong style="color:#3273dc">● Sound A (blue)</strong> &nbsp; <strong style="color:#d95f59">● Sound B (red)</strong></p>
       <div style="display:flex;justify-content:space-between;gap:20px;margin-top:30px">
-        <strong>Calm, relaxed, quiet</strong><strong>Angry, aggressive, violent</strong>
+        <strong>${emotionQuestion.left}</strong><strong>${emotionQuestion.right}</strong>
       </div>
       <div id="emotion-scale-container" style="position:relative;height:130px;margin:10px 24px;touch-action:none">
         <div style="position:absolute;top:62px;left:0;right:0;height:5px;background:#b8b8b8;border-radius:3px"></div>
+        <div aria-hidden="true" style="position:absolute;left:50%;top:55px;height:19px;border-left:2px solid #555"></div>
         <div id="emotion-marker-a" role="slider" tabindex="0" aria-label="Sound A emotion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="45"
           style="position:absolute;left:45%;top:16px;transform:translateX(-50%);width:44px;height:44px;border-radius:50%;background:#3273dc;color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:grab;touch-action:none;user-select:none">A</div>
         <div id="emotion-marker-b" role="slider" tabindex="0" aria-label="Sound B emotion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="55"
@@ -3203,7 +2112,8 @@ function buildRelativeEmotionTrial(
         {
           step: 'ratings',
           rating_format: 'shared_emotion_v1',
-          emotion_scale: { min: 0, max: 100, left: 'Calm, relaxed, quiet', right: 'Angry, aggressive, violent' },
+          emotion_scale: { min: 0, max: 100, left: emotionQuestion.left, right: emotionQuestion.right },
+          questionnaire_version: '2026-11-10',
         },
         data
       ),
@@ -3215,6 +2125,7 @@ function buildRelativeEmotionTrial(
       const instruction = document.getElementById('emotion-instruction');
       const ready = () => {
         submit.disabled = !(touched.A && touched.B);
+        onRatingChange(touched.A && touched.B);
         if (!submit.disabled) instruction.textContent = 'Both sounds have been positioned. You may adjust them further or submit.';
       };
       for (const role of ['A', 'B']) {
@@ -3467,8 +2378,8 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
       throw new Error('This Prolific ID already has a different saved assignment. Use its original userID, or a fresh test prolificID.');
     }
     const fixedTraining = trainingManifest[phase];
-    if (!Array.isArray(fixedTraining) || fixedTraining.length !== 3) {
-      throw new Error('Training manifest must contain three examples per phase.');
+    if (!Array.isArray(fixedTraining) || fixedTraining.length !== (phase === 'phase1' ? 4 : 3)) {
+      throw new Error('Training manifest must contain four examples for phase 1 and three for phases 2 and 3.');
     }
     const plan = { ...session.trial_order, training: fixedTraining };
     validateAssignedPlan(plan, phase, userID);
@@ -3480,8 +2391,8 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
 
     const audioPaths = [...training, ...remaining].flatMap(trial => phase === 'phase1'
       ? [trial.audioPath] : [trial.soundA.audioPath, trial.soundB.audioPath]);
-    if (!completed.has('calibration|volume')) audioPaths.push('/static/stimulis/calibration/pink_noise.wav');
-    if (!completed.has('calibration|stereo')) audioPaths.push('/static/stimulis/calibration/left.wav');
+    if (!completed.has('calibration|volume')) audioPaths.push(...CALIBRATION_AUDIO);
+    if (!completed.has('calibration|stereo')) audioPaths.push('/static/stimulis/calibration/left.wav', '/static/stimulis/calibration/right.wav');
     const timeline = [{
       type: jsPsychPreload, audio: [...new Set(audioPaths)], show_progress_bar: true,
       message: '<p>Loading assigned audio files, please wait…</p>',
@@ -3495,16 +2406,34 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
         choices: ['Resume'] });
     } else {
       timeline.push({ type: jsPsychHtmlButtonResponse,
-        stimulus: `<div class="screen"><h2>Welcome to this scientific listening study</h2><p>Please read these instructions <strong>carefully</strong> before starting.</p><ul style="text-align:left;line-height:1.8"><li>Wear <strong>headphones or earphones in both ears</strong>.</li><li>Find a <strong>quiet place</strong> and close distracting applications.</li><li>Set a comfortable volume during calibration, then <strong>keep it unchanged</strong>.</li></ul><p>The study has three stages: <strong>calibration → practice → main study</strong>. Optional breaks are available.</p>${qualityReminder}</div>`,
+        stimulus: `<div class="screen"><h2>Welcome to this listening study</h2>
+        <ul class="instruction-list"><li>Wear <strong>headphones or earphones in both ears</strong> (charged if wireless) and activate noise cancellation if available.</li>
+        <li>Make sure you <strong>won’t be disturbed</strong> for the duration of the experiment: tell the people around you, close all other applications on your device, and put your phone away and in “do not disturb” mode.</li>
+        <li>Put this browser window in <strong>full screen</strong>.</li></ul>
+        <p>The study has three stages: <strong>calibration → practice → main study</strong>. It should last about <strong>1 hour</strong>.</p>
+        <p>For this study to yield valid scientific conclusions, we rely on you to follow the instructions, listen carefully to the sounds and answer earnestly to the questions. We included various types of technical and attention checks and reserve the right to reject your submission should you not participate responsibly.</p><p>Thank you for participating!</p></div>`,
         choices: ['Continue'] });
     }
     timeline.push(...buildCalibrationTrials(completed));
     if (training.length) timeline.push({ type: jsPsychHtmlButtonResponse,
-      stimulus: `<div class="screen"><h2>How to respond</h2><p>Keep your headphones on and the calibrated volume unchanged. Each recording lasts five seconds and is played once. Listen to the full recording before answering.</p><p>${paired ? (phase === 'phase2' ? 'You will hear Sound A followed by Sound B. Indicate separately whether each was audible. If both were audible, place blue A and red B on the same scale by dragging each circle. Both circles may have the same position.' : 'You will hear two recordings in sequence, labeled Sound A and Sound B. Indicate separately whether you heard each sound. If both were audible, answer the questions using the sliders.') : 'Indicate whether you heard nothing, something other than footsteps, or footsteps. If something was audible, answer the two questions using the sliders.'}</p><p>Use the full range of each slider when appropriate. There is no preferred answer to a subjective rating: give your own impression. If you heard nothing, say so rather than guessing.</p><p>You will now try three practice examples.</p></div>`,
-      choices: ['Start practice'] });
-    timeline.push(...training.flatMap(trial => buildTrial(trial, questions, true)));
+      stimulus: phase === 'phase1' ? `<div class="screen"><h2>Practice</h2>
+      <p>You will now complete <strong>${plan.training.length} trials</strong> to familiarize yourself with the task. At the beginning of each trial, you will listen to a <strong>5-second sound</strong>.</p>
+      <p>Then we will ask you:</p><ol class="instruction-list" type="i"><li>Whether you heard anything at all and, if you did, whether that included footsteps (or footsteps-like sounds).</li><li>Did you hear audio artefacts overlaid on the sound (crackling, electrical noise, intermittent background noise…)?</li><li>Irrespective of the presence of footsteps and ignoring any audio artefact, how realistic did the sound feel to you? Could you have heard it in the real world?</li></ol>
+      <p>In practice, as in the main experiment, each sound will be played <strong>only once and cannot be replayed</strong>. Please listen carefully. Move both sliders before submitting, unless you did not hear anything.</p>
+      <p>If for any reason you get disconnected, use the link in Prolific to reconnect to the experiment. You will automatically continue where you left off.</p></div>` : `<div class="screen"><h2>Practice</h2>
+      <p>You will now complete <strong>${plan.training.length} practice trials</strong> to familiarize yourself with the task. At the beginning of each trial, you will hear <strong>two 5-second sounds</strong>: Sound A, then Sound B.</p>
+      <p>Then we will ask you:</p><ol class="instruction-list"><li>Whether you heard anything in Sound A and in Sound B, separately. If either sound was inaudible, the ratings will disappear; answer both audibility questions and submit.</li>
+      ${phase === 'phase2' ? `<li>${questions[0].text} Place <strong>blue A and red B</strong> on the same scale, from <strong>${questions[0].left}</strong> to <strong>${questions[0].right}</strong>. Move both circles, even slightly, before submitting. They may occupy the same position.</li>` : questions.map(q => `<li>${q.text} Use the scale from <strong>${q.left}</strong> to <strong>${q.right}</strong>.</li>`).join('')}
+      </ol><p>${phase === 'phase3' ? 'Move every slider, even slightly, before submitting. ' : ''}There is no preferred answer: give your own impression.</p>
+      <p>In practice, as in the main experiment, each sound will be played <strong>only once and cannot be replayed</strong>. Please listen carefully. Keep your headphones on and your calibrated volume unchanged.</p>
+      <p>If you get disconnected, use the link in Prolific to reconnect. You will automatically continue where you left off.</p></div>`,
+      choices: ['Start practice'], on_load() { setStudyStage('Practice'); } });
+    timeline.push(...training.map(trial => ({
+      timeline: buildTrial(trial, questions, true),
+      on_timeline_start() { setStudyStage(`Practice ${plan.training.indexOf(trial) + 1} / ${plan.training.length}`); },
+    })));
     if (training.length) timeline.push({ type: jsPsychHtmlButtonResponse,
-      stimulus: `<div class="screen"><h3>Practice complete</h3><p>The main study has <strong>${plan.test.length} trials</strong>, with ${plan.procedure.break_after.length} optional breaks. The questions work the same way as in practice. Listen fully and read each question before responding.</p>${qualityReminder}</div>`, choices: ['Start the study'] });
+      stimulus: `<div class="screen"><h3>Practice complete</h3><p>The main study has <strong>${plan.test.length} trials</strong>, with ${plan.procedure.break_after.length} optional breaks. The questions work the same way as in practice. Listen fully and read each question before responding.</p>${qualityReminder}</div>`, choices: ['Start the study'], on_load() { setStudyStage(null); } });
 
     const breaks = plan.procedure?.break_after || [];
     const seenBreaks = new Set();
@@ -3527,13 +2456,14 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
           emittedCatches.add(check.id);
         }
       }
-      timeline.push(...buildTrial(trial, questions, false));
+      timeline.push({ timeline: buildTrial(trial, questions, false), on_timeline_start() { setStudyStage(null); } });
     }
     for (const check of catches) {
       if (!emittedCatches.has(check.id) && !completed.has(`attention|${check.id}`)) {
         timeline.push(buildAttentionCheck(check, phase));
       }
     }
+    if (!completed.has('feedback|final')) timeline.push(buildFinalFeedback(phase));
     console.info(`[${phase}] USER ID ${userID}: ${plan.test.length} assigned, ${remaining.length} remaining.`);
     await jsPsych.run(timeline);
   } catch (error) {
@@ -3543,44 +2473,43 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
 
 // Audibility is recorded even when the subsequent ratings are skipped.
 function buildSurveyTrial(jsPsych, questions, options = {}) {
-  const phase = window.EXPERIMENT_PHASE;
-  const single = phase === 'phase1';
-  const sliderQuestions = single ? questions.slice(1) : questions;
-  const slider = phase === 'phase2'
-    ? buildRelativeEmotionTrial(jsPsych, options)
-    : buildSliderSurveyTrial(jsPsych, sliderQuestions, options);
-  const heard = {};
-  const audibilityData = () => single
-    ? { audibilite_son: heard.single, heard_sound: heard.single !== 0 }
-    : { heard_sound_A: heard.A, heard_sound_B: heard.B };
-  const skip = () => single ? heard.single === 0 : heard.A === false || heard.B === false;
-  function finishGate() {
-    Object.assign(slider.data, audibilityData(), { ratings_skipped: false });
-    if (skip()) {
-      jsPsych.data.addDataToLastTrial({ ...audibilityData(), step: 'ratings', ratings_skipped: true, skip_reason: 'inaudible' });
-      slider.on_finish({ ...slider.data, ratings_skipped: true,
-        skip_reason: 'inaudible', ...audibilityData() });
-    }
-  }
-  const gates = single ? [{
-    type: jsPsychHtmlButtonResponse,
-    stimulus: '<div class="survey-wrap audibility-screen"><p class="survey-question audibility-question">Did you hear footsteps?</p></div>',
-    choices: ["no, I didn't hear anything at all", "I heard something that wasn't footsteps", 'I heard footsteps'],
-    data: { ...options.data, step: 'audibility', training: !!options.isTraining },
-    on_finish(result) { heard.single = result.response; finishGate(); },
-  }] : ['A', 'B'].map(role => ({
-    type: jsPsychHtmlButtonResponse,
-    stimulus: `<div class="survey-wrap audibility-screen"><p class="survey-question audibility-question">Sound ${role}: did you hear something?</p></div>`,
-    choices: ["No, I didn't hear anything", 'Yes, I heard something'],
-    data: { ...options.data, step: 'audibility', sound_role: role, training: !!options.isTraining },
-    on_finish(result) {
-      heard[role] = result.response === 1;
-      if (role === 'B') finishGate();
-    },
-  }));
-  return { timeline: [...gates, {
-    timeline: [slider], conditional_function: () => !skip(),
-  }] };
+  if (window.EXPERIMENT_PHASE === 'phase1') return buildPhaseOneSurvey(jsPsych, questions, options);
+  return buildPairedSurvey(jsPsych, questions, options);
+}
+
+function buildPairedSurvey(jsPsych, questions, options = {}) {
+  const heard = { A: null, B: null };
+  let ratingsReady = false;
+  let update = null;
+  const settings = { ...options, emotionQuestion: questions[0],
+    onRatingChange(ready) { ratingsReady = ready; if (update) update(); } };
+  const trial = window.EXPERIMENT_PHASE === 'phase2'
+    ? buildRelativeEmotionTrial(jsPsych, settings) : buildSliderSurveyTrial(jsPsych, questions, settings);
+  const load = trial.on_load, finish = trial.on_finish;
+  trial.stimulus = `<div class="survey-wrap paired-survey">${['A', 'B'].map(role => `<fieldset class="audibility-options"><legend>Sound ${role}: did you hear something?</legend><label><input type="radio" name="heard-${role}" value="no"> No, I didn’t hear anything</label><label><input type="radio" name="heard-${role}" value="yes"> Yes, I heard something</label></fieldset>`).join('')}<div id="paired-ratings">${trial.stimulus}</div><p id="paired-help" role="status"></p></div>`;
+  trial.on_load = () => {
+    heard.A = heard.B = null; ratingsReady = false; update = null;
+    load();
+    const submit = document.querySelector('#jspsych-html-button-response-btngroup button');
+    update = () => {
+      const skip = heard.A === false || heard.B === false;
+      document.getElementById('paired-ratings').hidden = skip;
+      submit.disabled = heard.A === null || heard.B === null || (!skip && !ratingsReady);
+      document.getElementById('paired-help').textContent = skip
+        ? 'Answer for both sounds, then submit without answering the ratings.'
+        : 'Answer for both sounds and move every slider or both circles before submitting.';
+    };
+    for (const role of ['A', 'B']) document.querySelectorAll(`input[name="heard-${role}"]`).forEach(input => input.addEventListener('change', () => { heard[role] = input.value === 'yes'; update(); }));
+    update();
+  };
+  trial.on_finish = data => {
+    const skip = heard.A === false || heard.B === false;
+    Object.assign(data, { heard_sound_A: heard.A, heard_sound_B: heard.B,
+      ratings_skipped: skip, skip_reason: skip ? 'inaudible' : null,
+      questionnaire_version: '2026-11-10', question_order: questions.map(q => q.key) });
+    finish(data);
+  };
+  return trial;
 }
 
 
@@ -3656,3 +2585,69 @@ async function waitForStudySaves() {
   }
 }
 window.addEventListener('online', () => flushStudyOutbox().catch(showSavingStatus));
+
+function buildPhaseOneSurvey(jsPsych, questions, options) {
+  const trial = buildSliderSurveyTrial(jsPsych, questions.slice(1), options);
+  const originalLoad = trial.on_load;
+  const originalFinish = trial.on_finish;
+  let answer = null;
+  const moved = new Set();
+  trial.stimulus = `<div class="survey-wrap phase-one-survey"><fieldset class="audibility-options"><legend>Did you hear footsteps?</legend>${[questions[0].left, questions[0].answer2, questions[0].answer3].map((label, index) => `<label><input type="radio" name="heard" value="${index}"> ${label}</label>`).join('')}</fieldset><div id="phase-one-ratings">${trial.stimulus}</div><p id="rating-help" role="status">Select an answer and move both sliders before submitting.</p></div>`;
+  trial.on_load = () => {
+    originalLoad(); answer = null; moved.clear();
+    const submit = document.querySelector('#jspsych-html-button-response-btngroup button');
+    const update = () => {
+      document.getElementById('phase-one-ratings').hidden = answer === 0;
+      submit.disabled = answer === null || (answer !== 0 && moved.size !== questions.length - 1);
+      document.getElementById('rating-help').textContent = answer === 0 ? 'You may submit without answering the sliders.' : 'Select an answer and move both sliders before submitting.';
+    };
+    document.querySelectorAll('input[name="heard"]').forEach(input => input.addEventListener('change', () => { answer = Number(input.value); update(); }));
+    questions.slice(1).forEach((q, index) => document.getElementById(`q${index}`).addEventListener('input', () => { moved.add(index); update(); }));
+    update();
+  };
+  trial.on_finish = data => {
+    Object.assign(data, { audibilite_son: answer, heard_sound: answer !== 0,
+      ratings_skipped: answer === 0, skip_reason: answer === 0 ? 'inaudible' : null,
+      audibility_labels: [questions[0].left, questions[0].answer2, questions[0].answer3],
+      question_order: questions.map(q => q.key) });
+    originalFinish(data);
+  };
+  return trial;
+}
+
+function buildFinalFeedback(phase) {
+  return {
+    type: jsPsychHtmlButtonResponse, choices: [],
+    stimulus: `<div class="screen"><h2>Before you finish</h2><form id="final-feedback">
+      <fieldset class="audibility-options"><legend>Did you change the volume during the experiment?</legend>
+      <label><input type="radio" name="volume_changed" value="yes" required> Yes</label>
+      <label><input type="radio" name="volume_changed" value="no" required> No</label></fieldset>
+      <div id="volume-reason-field" hidden><label for="volume-reason">Please explain briefly why.</label><textarea id="volume-reason" maxlength="4000" rows="3"></textarea></div>
+      <label for="general-feedback">General feedback (optional)</label><p>Anything you want to tell us that could be useful to us.</p>
+      <textarea id="general-feedback" maxlength="10000" rows="4"></textarea>
+      <button type="submit" class="jspsych-btn">Submit and finish</button></form></div>`,
+    data: { step: 'feedback', phase, questionnaire_version: '2026-11-10' },
+    on_load() {
+      setStudyStage('Feedback');
+      const form = document.getElementById('final-feedback');
+      const reason = document.getElementById('volume-reason');
+      form.addEventListener('change', () => {
+        const yes = form.elements.volume_changed.value === 'yes';
+        document.getElementById('volume-reason-field').hidden = !yes; reason.required = yes;
+        reason.setCustomValidity('');
+      });
+      reason.addEventListener('input', () => reason.setCustomValidity(''));
+      form.addEventListener('submit', event => {
+        event.preventDefault();
+        const changed = form.elements.volume_changed.value === 'yes';
+        if (changed && !reason.value.trim()) { reason.setCustomValidity('Please explain briefly why.'); reason.reportValidity(); return; }
+        jsPsych.finishTrial({ volume_changed: changed, volume_change_reason: changed ? reason.value.trim() : null,
+          general_feedback: document.getElementById('general-feedback').value.trim() });
+      });
+    },
+    on_finish(data) {
+      saveTrialToServer({ phase, trialKey: 'feedback|final', section: 'feedback', training: false, payload: data })
+        .catch(error => console.error('Feedback save failed:', error));
+    },
+  };
+}

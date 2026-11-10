@@ -67,8 +67,8 @@ def stimuli(payload):
                            'source_id':clip.get('sourceId'),'reference_role':payload.get(f'sound_{role}_role'),
                            'played_in_this_event':payload.get('stimulus')==clip['audioPath'] if payload.get('step') in ('listenA','listenB') else None})
     if not result and payload.get('calibration_test') in ('volume','stereo'):
-        filename='pink_noise.wav' if payload['calibration_test']=='volume' else 'left.wav'
-        result.append(describe_sound('/static/stimulis/calibration/'+filename))
+        paths = payload.get('audio_paths') or [payload.get('audioPath') or ('/static/stimulis/calibration/pink_noise.wav' if payload['calibration_test']=='volume' else '/static/stimulis/calibration/left.wav')]
+        result.extend(describe_sound(path) for path in paths)
     if not result:
         path=payload.get('audioPath') or payload.get('stimulus')
         if isinstance(path,str) and (path.startswith('/static/') or path.endswith('.wav')):
@@ -84,7 +84,7 @@ def save_event(data):
     payload=data.get('payload')
     if not isinstance(payload,dict):raise ValueError('payload must be an object')
     step=payload.get('step','screen')
-    section='attention' if step=='attention' else 'training' if payload.get('training') else 'calibration' if str(step).startswith('calibration') or payload.get('calibration_test') else 'test' if step in ('ratings','audibility','listen','listenA','listenB') else 'screen'
+    section='feedback' if step=='feedback' else 'attention' if step=='attention' else 'training' if payload.get('training') else 'calibration' if str(step).startswith('calibration') or payload.get('calibration_test') else 'test' if step in ('ratings','audibility','listen','listenA','listenB') else 'screen'
     with model.get_connection() as conn:
         conn.execute('INSERT OR IGNORE INTO research_events(event_id,prolific_id,user_id,phase,section,trial_index,client_time,payload,stimuli) VALUES (?,?,?,?,?,?,?,?,?)',
           (data['event_id'],participant['prolificID'],int(participant['userID']),data['phase'],section,payload.get('trialIndex'),data.get('client_time'),json.dumps(payload),json.dumps(stimuli(payload))))

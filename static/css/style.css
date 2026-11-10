@@ -195,3 +195,28 @@ body { background: #eef2f7; }
   font-weight: 600;
   text-align: center;
 }
+
+/* Survey revision: readable instructions, midpoint ticks and combined answers. */
+.instruction-list { text-align:left; line-height:1.65; }
+.instruction-list li { margin: 12px 0; }
+.audibility-options { border:0; padding:0; margin:0 0 20px; text-align:left; }
+.audibility-options legend { font-size:clamp(22px, 2.8vw, 30px); font-weight:600; margin-bottom:14px; }
+.audibility-options label { display:block; padding:9px 12px; margin:5px 0; border:1px solid var(--border); border-radius:6px; cursor:pointer; }
+.audibility-options input { margin-right:8px; }
+.rating-track { position:relative; flex:1; min-width:120px; padding-bottom:23px; padding-top:12px; }
+.rating-track .survey-slider { display:block; width:100%; margin:0; position:relative; z-index:1; }
+.rating-midpoint { position:absolute; left:50%; top:6px; height:18px; border-left:2px solid #52637b; pointer-events:none; }
+.rating-midpoint-label { position:absolute; left:50%; top:28px; transform:translateX(-50%); white-space:nowrap; font-size:12px; }
+.survey-slider:focus-visible { outline:2px solid var(--blue); outline-offset:5px; }
+.phase-one-survey { max-width:900px; }
+.phase-one-survey .survey-question { font-size:17px; line-height:1.4; }
+[hidden] { display:none !important; }
+.calibration-samples { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; }
+#final-feedback { text-align:left; }
+#final-feedback textarea { display:block; box-sizing:border-box; width:100%; margin:10px 0 24px; font:inherit; padding:10px; }
+#final-feedback label[for] { display:block; font-weight:600; }
+@media (max-width:650px) {
+  .slider-row { gap:8px; }
+  .slider-lbl { width:85px; font-size:12px; }
+  .survey-item { padding:14px 10px; }
+}
