@@ -258,5 +258,21 @@ body { background: #eef2f7; }
   .survey-item { padding:14px 10px; }
 }
 
-/* Keep the final feedback question smaller than trial audibility prompts. */
-#final-feedback .audibility-options legend { font-size:16px; line-height:1.5; }
+/* Matching section headings with smaller, regular-weight supporting text. */
+#final-feedback .audibility-options legend,
+#final-feedback label[for="general-feedback"] {
+  font-family:inherit;
+  font-size:16px;
+  font-weight:700;
+  line-height:1.5;
+}
+#final-feedback .audibility-options label,
+#final-feedback label[for="volume-reason"],
+#final-feedback p {
+  font-family:inherit;
+  font-size:14px;
+  font-weight:400;
+  line-height:1.5;
+}
+#final-feedback label[for="general-feedback"] { margin-top:28px; }
+
