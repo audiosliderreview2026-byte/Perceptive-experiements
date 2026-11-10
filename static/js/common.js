@@ -1424,8 +1424,9 @@ function buildListenTrial({
 
 const CALIBRATION_AUDIO = [
   '/static/stimulis/calibration/pink_noise.wav',
-  '/static/stimulis/calibration/extreme_positive.wav',
+  '/static/stimulis/training/phase1/02_sound.wav',
   '/static/stimulis/calibration/extreme_negative.wav',
+  '/static/stimulis/calibration/quiet_alpha_minus8.wav',
 ];
 function buildCalibrationTrials(completedKeys = new Set()) {
   let replay = null;
@@ -1437,9 +1438,9 @@ function buildCalibrationTrials(completedKeys = new Set()) {
   const volume = {
     type: jsPsychHtmlButtonResponse,
     stimulus: `<div class="screen"><h2>Audio Calibration</h2>
-      <p>As a reminder, wear <strong>headphones or earphones</strong> and be in a <strong>quiet environment</strong>.</p>
-      <p>Listen to all three sounds below: a calibration noise and two example recordings. Use your device volume control to find a <strong>comfortable listening level</strong> for all three.</p>
-      <p>The sounds should be clearly audible without feeling too loud. Choose a level that stays comfortable for all three recordings. You may replay these sounds while adjusting your volume.</p>
+      <p>As a reminder, you should wear <strong>headphones or earphones</strong> and be in a <strong>quiet environment</strong>.</p>
+      <p>Listen to all four sounds below. Use your device volume control to find a <strong>comfortable listening level</strong> for all four.</p>
+      <p>The sounds should be clearly audible without feeling too loud. Choose a level that stays comfortable for all four recordings. You may replay these sounds while adjusting your volume.</p>
       <div class="calibration-samples">${CALIBRATION_AUDIO.map((path, i) => `<button type="button" class="jspsych-btn calibration-sample" data-index="${i}">▶ Play sound ${i + 1}</button>`).join('')}</div>
       <p id="calibration-play-status" role="status">Listen to each sound before answering.</p>
       <p><strong>How would you describe the current volume?</strong></p></div>`,
@@ -1469,7 +1470,7 @@ function buildCalibrationTrials(completedKeys = new Set()) {
           button.textContent = `↻ Replay sound ${index + 1} ✓`;
           plays.forEach(item => item.disabled = false);
           answers.forEach(item => item.disabled = heard.size !== CALIBRATION_AUDIO.length);
-          status.textContent = heard.size === CALIBRATION_AUDIO.length ? 'All three sounds played. You may answer or replay a sound.' : `${heard.size} / ${CALIBRATION_AUDIO.length} sounds played.`;
+          status.textContent = heard.size === CALIBRATION_AUDIO.length ? 'All four sounds played. You may answer or replay a sound.' : `${heard.size} / ${CALIBRATION_AUDIO.length} sounds played.`;
         }, { once: true });
         audio.play().catch(failed);
       }));

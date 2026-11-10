@@ -8,5 +8,17 @@
     "source": "/static/stimulis/segments_5s/test_plugin_edits/slow_boots_hay_chunk_039__edit_24__alpha_m32p460260__first_0-5s.wav",
     "alpha": -32.46026,
     "durationSeconds": 5
-  }
+  },
+  "quiet_alpha_minus8.wav": {
+    "source": "/static/stimulis/segments_5s/test_plugin_edits/slow_heels_concrete_chunk_011__edit_05__alpha_m7p843390__first_0-5s.wav",
+    "alpha": -7.84339,
+    "durationSeconds": 5,
+    "selection": "Lowest nonzero RMS among first excerpts with alpha between -8.5 and -7.5; no gain adjustment."
+  },
+  "calibration_order": [
+    "/static/stimulis/calibration/pink_noise.wav",
+    "/static/stimulis/training/phase1/02_sound.wav",
+    "/static/stimulis/calibration/extreme_negative.wav",
+    "/static/stimulis/calibration/quiet_alpha_minus8.wav"
+  ]
 }
