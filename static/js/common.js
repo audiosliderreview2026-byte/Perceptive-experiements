@@ -1277,6 +1277,25 @@ function addPartialDownloadButton(
 // INITIALIZE JSPsych
 // ==========================================================
 
+function renderStudyCompletion(target) {
+  target.innerHTML = `
+            <div
+              style="
+                text-align:center;
+                padding:120px 20px;
+              "
+            >
+              <h2 style="color:#1e508c">
+                Thank you for your participation!
+              </h2>
+
+              <p>
+                Your responses have been saved.
+              </p>
+            </div>
+          `;
+}
+
 function makeJsPsych(
   downloadFilename
 ) {
@@ -1310,24 +1329,7 @@ function makeJsPsych(
           downloadFilename
         );
 
-        jsPsych
-          .getDisplayElement()
-          .innerHTML = `
-            <div
-              style="
-                text-align:center;
-                padding:120px 20px;
-              "
-            >
-              <h2 style="color:#1e508c">
-                Thank you for your participation!
-              </h2>
-
-              <p>
-                Your responses have been saved.
-              </p>
-            </div>
-          `;
+        renderStudyCompletion(jsPsych.getDisplayElement());
       },
     });
 
@@ -1336,7 +1338,7 @@ function makeJsPsych(
     'beforeunload',
     event => {
 
-      if (finished) {
+      if (finished || window.STUDY_COMPLETION_PREVIEW) {
         return;
       }
 
@@ -2351,6 +2353,11 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
     const prolificID = params.get('prolificID') || params.get('PROLIFIC_PID');
     if (!prolificID?.trim()) throw new Error('Add a non-empty prolificID to the URL.');
     window.PROLIFIC_ID = prolificID.trim();
+    if (window.PROLIFIC_ID === 'last screen') {
+      window.STUDY_COMPLETION_PREVIEW = true;
+      renderStudyCompletion(document.body);
+      return;
+    }
     const registration = await fetch('/api/participant', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prolificID: window.PROLIFIC_ID }),
