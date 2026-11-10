@@ -2374,9 +2374,20 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
     const prolificID = params.get('prolificID') || params.get('PROLIFIC_PID');
     if (!prolificID?.trim()) throw new Error('Add a non-empty prolificID to the URL.');
     window.PROLIFIC_ID = prolificID.trim();
-    if (window.PROLIFIC_ID === 'last screen') {
+    const attentionPreview = /^attention([1-5])$/.exec(window.PROLIFIC_ID);
+    if (window.PROLIFIC_ID === 'last screen' || window.PROLIFIC_ID === 'break' || attentionPreview) {
       window.STUDY_COMPLETION_PREVIEW = true;
-      await jsPsych.run([buildFinalFeedback(phase)]);
+      let preview;
+      if (window.PROLIFIC_ID === 'last screen') preview = buildFinalFeedback(phase);
+      else if (window.PROLIFIC_ID === 'break') preview = buildBreakScreen();
+      else {
+        const count = { phase1: 234, phase2: 190, phase3: 180 }[phase];
+        const check = attentionCheckSchedule(phase, '1', count)[Number(attentionPreview[1]) - 1];
+        // Use the actual check screen, without permission acquisition or saving.
+        preview = buildAttentionCheck(check, phase).timeline[1];
+        preview.on_finish = () => {};
+      }
+      await jsPsych.run([preview]);
       return;
     }
     const registration = await fetch('/api/participant', {
@@ -2487,8 +2498,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
       const boundary = breaks.filter(value => value <= trial.trialIndex).at(-1);
       if (boundary !== undefined && !seenBreaks.has(boundary)) {
         const laterAlreadyDone = plan.test.some(t => t.trialIndex >= boundary && isDone(t, 'test'));
-        if (!laterAlreadyDone) timeline.push({ type: jsPsychHtmlButtonResponse,
-          stimulus: `<div class="screen"><h3>Time for a break</h3><p>You may rest for two minutes. Continue whenever you are ready.</p><p>Before continuing, put both earphones back in place, check that your surroundings are quiet, and return your attention to the recordings. Keep the calibrated volume unchanged.</p></div>`, choices: ['Continue when ready'] });
+        if (!laterAlreadyDone) timeline.push(buildBreakScreen());
         seenBreaks.add(boundary);
       }
       // Insert due, unfinished checks, including one interrupted just before a refresh.
@@ -2758,4 +2768,9 @@ function buildStudyPermission(trialKey) {
       prepare();
     },
   };
+}
+
+function buildBreakScreen() {
+  return { type: jsPsychHtmlButtonResponse,
+          stimulus: `<div class="screen"><h3>Time for a break</h3><p>You may rest for two minutes. Continue whenever you are ready.</p><p>Before continuing, put both earphones back in place, check that your surroundings are quiet, and return your attention to the recordings. Keep the calibrated volume unchanged.</p></div>`, choices: ['Continue when ready'] };
 }
