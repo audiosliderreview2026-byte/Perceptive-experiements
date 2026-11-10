@@ -1283,7 +1283,14 @@ function addPartialDownloadButton(
 // INITIALIZE JSPsych
 // ==========================================================
 
+const PROLIFIC_COMPLETION_LINKS = {
+  phase1: 'https://app.prolific.com/submissions/complete?cc=CRHUBZUT',
+  phase2: null,
+  phase3: null,
+};
+
 function renderStudyCompletion(target) {
+  const completionLink = PROLIFIC_COMPLETION_LINKS[window.EXPERIMENT_PHASE];
   target.innerHTML = `
             <div
               style="
@@ -1298,6 +1305,8 @@ function renderStudyCompletion(target) {
               <p>
                 Your responses have been saved.
               </p>
+              ${completionLink ? `<p>Click here to validate your participation to this study with prolific</p>
+              <p><a class="jspsych-btn" href="${completionLink}">Validate my participation on Prolific</a></p>` : ''}
             </div>
           `;
 }
