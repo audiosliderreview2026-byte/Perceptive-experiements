@@ -2403,7 +2403,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
     const qualityReminder = '<p>Please wear your headphones correctly, listen carefully, and answer honestly. We include attention checks and review response quality. Random or inattentive responding may result in rejection of your submission and non-payment after review.</p>';
     if (completed.size) {
       timeline.push({ type: jsPsychHtmlButtonResponse,
-        stimulus: `<div class="screen"><h2>Welcome back</h2><p>${plan.test.length - remaining.length} / ${plan.test.length} trials completed.</p><p>Return to a quiet environment and put your headphones on before resuming.</p>${qualityReminder}</div>`,
+        stimulus: `<div class="screen"><h2>Welcome back</h2><p>${plan.test.length - remaining.length} / ${plan.test.length} trials completed.</p><p>Please return to a quiet environment and put your headphones on before resuming.</p><p>For this study to yield valid scientific conclusions, we rely on you to carefully follow the instructions, listen attentively to the sounds and answer the questions honestly and thoughtfully. Various technical and attention checks have been included and we reserve the right to reject your submission should you fail these checks.</p></div>`,
         choices: ['Resume'] });
     } else {
       timeline.push({ type: jsPsychHtmlButtonResponse,
@@ -2422,12 +2422,12 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
       stimulus: phase === 'phase1' ? `<div class="screen"><h2>Practice</h2>
       <p>You will now complete <strong>${plan.training.length} trials</strong> to familiarize yourself with the task. At the beginning of each trial, you will listen to a <strong>5-second sound</strong>.</p>
       <p>Then we will ask you:</p><ol class="instruction-list" type="i"><li>Whether you heard anything at all and, if you did, whether that included footsteps (or footsteps-like sounds).</li><li>Did you hear audio artefacts overlaid on the sound (crackling, electrical noise, intermittent background noise…)?</li><li>Irrespective of the presence of footsteps and ignoring any audio artefact, how realistic did the sound feel to you? Could you have heard it in the real world?</li></ol>
-      <p>In practice, as in the main experiment, each sound will be played <strong>only once and cannot be replayed</strong>. Please listen carefully. Move both sliders before submitting, unless you did not hear anything.</p>
+      <p>In practice, as in the main experiment, each sound will be played <strong>only once and cannot be replayed</strong>. Please listen carefully.</p>
       <p>If for any reason you get disconnected, use the link in Prolific to reconnect to the experiment. You will automatically continue where you left off.</p></div>` : `<div class="screen"><h2>Practice</h2>
       <p>You will now complete <strong>${plan.training.length} practice trials</strong> to familiarize yourself with the task. At the beginning of each trial, you will hear <strong>two 5-second sounds</strong>: Sound A, then Sound B.</p>
       <p>Then we will ask you:</p><ol class="instruction-list"><li>Whether you heard anything in Sound A and in Sound B, separately. If either sound was inaudible, the ratings will disappear; answer both audibility questions and submit.</li>
-      ${phase === 'phase2' ? `<li>${questions[0].text} Place <strong>blue A and red B</strong> on the same scale, from <strong>${questions[0].left}</strong> to <strong>${questions[0].right}</strong>. Move both circles, even slightly, before submitting. They may occupy the same position.</li>` : questions.map(q => `<li>${q.text} Use the scale from <strong>${q.left}</strong> to <strong>${q.right}</strong>.</li>`).join('')}
-      </ol><p>${phase === 'phase3' ? 'Move every slider, even slightly, before submitting. ' : ''}There is no preferred answer: give your own impression.</p>
+      ${phase === 'phase2' ? `<li>${questions[0].text} Place <strong>blue A and red B</strong> on the same scale, from <strong>${questions[0].left}</strong> to <strong>${questions[0].right}</strong>. They may occupy the same position.</li>` : questions.map(q => `<li>${q.text} Use the scale from <strong>${q.left}</strong> to <strong>${q.right}</strong>.</li>`).join('')}
+      </ol><p>There is no preferred answer: give your own impression.</p>
       <p>In practice, as in the main experiment, each sound will be played <strong>only once and cannot be replayed</strong>. Please listen carefully. Keep your headphones on and your calibrated volume unchanged.</p>
       <p>If you get disconnected, use the link in Prolific to reconnect. You will automatically continue where you left off.</p></div>`,
       choices: ['Start practice'], on_load() { setStudyStage('Practice'); } });
