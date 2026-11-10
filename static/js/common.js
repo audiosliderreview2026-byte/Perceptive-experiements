@@ -1305,8 +1305,7 @@ function renderStudyCompletion(target) {
               <p>
                 Your responses have been saved.
               </p>
-              ${completionLink ? `<p><strong>Click here</strong> to validate your participation to this study with prolific</p>
-              <p><a class="jspsych-btn" href="${completionLink}">validate</a></p>` : ''}
+              ${completionLink ? `<p><a class="jspsych-btn" href="${completionLink}"><strong>Click here</strong> to validate your participation to this study with prolific</a></p>` : ''}
             </div>
           `;
 }
