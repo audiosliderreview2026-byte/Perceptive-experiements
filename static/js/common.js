@@ -2403,7 +2403,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
     const qualityReminder = '<p>Please wear your headphones correctly, listen carefully, and answer honestly. We include attention checks and review response quality. Random or inattentive responding may result in rejection of your submission and non-payment after review.</p>';
     if (completed.size) {
       timeline.push({ type: jsPsychHtmlButtonResponse,
-        stimulus: `<div class="screen"><h2>Welcome back</h2><p>${plan.test.length - remaining.length} / ${plan.test.length} trials completed.</p><p>Please return to a quiet environment and put your headphones on before resuming.</p><p>For this study to yield valid scientific conclusions, we rely on you to carefully follow the instructions, listen attentively to the sounds and answer the questions honestly and thoughtfully. Various technical and attention checks have been included and we reserve the right to reject your submission should you fail these checks.</p></div>`,
+        stimulus: `<div class="screen"><h2>Welcome back</h2><p>${plan.test.length - remaining.length} / ${plan.test.length} trials completed.</p><p>Please return to a quiet environment and put your headphones on before resuming.</p><p></p></div>`,
         choices: ['Resume'] });
     } else {
       timeline.push({ type: jsPsychHtmlButtonResponse,
@@ -2425,7 +2425,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
       <p>In practice, as in the main experiment, each sound will be played <strong>only once and cannot be replayed</strong>. Please listen carefully.</p>
       <p>If for any reason you get disconnected, use the link in Prolific to reconnect to the experiment. You will automatically continue where you left off.</p></div>` : `<div class="screen"><h2>Practice</h2>
       <p>You will now complete <strong>${plan.training.length} practice trials</strong> to familiarize yourself with the task. At the beginning of each trial, you will hear <strong>two 5-second sounds</strong>: Sound A, then Sound B.</p>
-      <p>Then we will ask you:</p><ol class="instruction-list"><li>Whether you heard anything in Sound A and in Sound B, separately. If either sound was inaudible, the ratings will disappear; answer both audibility questions and submit.</li>
+      <p>Then we will ask you:</p><ol class="instruction-list"><li>Whether you heard anything in Sound A and in Sound B, separately. If either sound was inaudible, the ratings will disappear. Answer both audibility questions and submit.</li>
       ${phase === 'phase2' ? `<li>${questions[0].text} Place <strong>blue A and red B</strong> on the same scale, from <strong>${questions[0].left}</strong> to <strong>${questions[0].right}</strong>. They may occupy the same position.</li>` : questions.map(q => `<li>${q.text} Use the scale from <strong>${q.left}</strong> to <strong>${q.right}</strong>.</li>`).join('')}
       </ol><p>There is no preferred answer: give your own impression.</p>
       <p>In practice, as in the main experiment, each sound will be played <strong>only once and cannot be replayed</strong>. Please listen carefully. Keep your headphones on and your calibrated volume unchanged.</p>
