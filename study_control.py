@@ -66,7 +66,10 @@ def attention_schedule(phase, user, count):
 
 
 def duration(path):
-    with wave.open(str(ROOT / path.lstrip('/')), 'rb') as audio:
+    filename=ROOT / path.lstrip('/')
+    if not filename.is_file():
+        raise ValueError(f'Missing audio file on server: {path}. Upload this WAV and reload the app.')
+    with wave.open(str(filename), 'rb') as audio:
         return min(5.0, audio.getnframes()/audio.getframerate())
 
 

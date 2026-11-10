@@ -2299,6 +2299,12 @@ function shuffle(arr) {
   return a;
 }
 // Notebook-assigned experiments. USER ID chooses an order; Prolific ID owns saved responses.
+async function readStudyJson(response) {
+  const text = await response.text();
+  try { return JSON.parse(text); }
+  catch (_) { throw new Error(`The server returned HTTP ${response.status} instead of JSON. Check the PythonAnywhere error log and verify that all deployment files, including the new practice WAV, were uploaded.`); }
+}
+
 async function fetchExperimentJson(url) {
   const response = await fetch(url, { cache: 'no-store' });
   if (!response.ok) {
@@ -2377,7 +2383,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prolificID: window.PROLIFIC_ID, phase }),
     });
-    const participant = await registration.json();
+    const participant = await readStudyJson(registration);
     if (!registration.ok) throw new Error(participant.error || 'Participant registration failed');
     const userID = participant.userID;
     window.STUDY_SESSION_TOKEN = participant.session_token;
