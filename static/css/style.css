@@ -276,3 +276,47 @@ body { background: #eef2f7; }
 }
 #final-feedback label[for="general-feedback"] { margin-top:28px; }
 
+
+/* Compact audibility controls leave more room for the paired ratings. */
+.jspsych-content:has(.paired-survey) {
+  width: min(100%, 980px);
+  max-width: 980px !important;
+  margin: clamp(12px, 4vh, 36px) auto auto;
+}
+.paired-audibility {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+  margin-bottom: 8px;
+}
+.paired-audibility .audibility-options {
+  min-width: 0;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.paired-audibility legend {
+  font-size: 17px;
+  margin-bottom: 3px;
+}
+.paired-audibility label { padding: 5px 9px; margin: 3px 0; }
+.paired-survey #paired-ratings > .survey-wrap { padding-top: 0; }
+.emotion-survey h2 { margin: 8px 0 4px; }
+.emotion-survey p { margin: 4px 0; }
+.paired-survey .survey-item { padding: 12px 14px; margin-bottom: 8px; }
+.paired-survey .survey-question { font-size: 17px; margin-bottom: 9px; }
+.paired-survey .slider-lbl { width: clamp(76px, 14vw, 116px); }
+.paired-survey .survey-slider { height: 8px; }
+.paired-survey .survey-slider::-webkit-slider-runnable-track { height: 8px; }
+.paired-survey .survey-slider::-moz-range-track { height: 8px; }
+.paired-survey .survey-slider::-webkit-slider-thumb {
+  width: 24px;
+  height: 24px;
+  margin-top: -8px;
+}
+.paired-survey .survey-slider::-moz-range-thumb { width: 24px; height: 24px; }
+
+@media (max-width: 560px) {
+  .paired-audibility { grid-template-columns: 1fr; }
+  .paired-survey .rating-track { min-width: 0; }
+}

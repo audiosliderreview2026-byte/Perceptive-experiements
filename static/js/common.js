@@ -2062,7 +2062,7 @@ function buildRelativeEmotionTrial(
 
 
   const html = `
-    <div class="survey-wrap">
+    <div class="survey-wrap emotion-survey">
       ${tag}
       <h2 style="font-size:1.5rem;line-height:1.4">${emotionQuestion.text}</h2>
       <p>Please place both sounds on the emotional scale below.</p>
@@ -2070,13 +2070,13 @@ function buildRelativeEmotionTrial(
       <div style="display:grid;grid-template-columns:6em minmax(0,1fr) 6em;align-items:center;gap:4px">
         <strong style="text-align:right">${emotionQuestion.left.split(',').map(word => `<span style="display:block">${word.trim()}</span>`).join('')}</strong>
         <div id="emotion-scale-container" style="position:relative;height:145px;margin:0 24px;touch-action:none">
-          <div style="position:absolute;top:62px;left:0;right:0;height:5px;background:#b8b8b8;border-radius:3px"></div>
+          <div style="position:absolute;top:61px;left:0;right:0;height:8px;background:#b8b8b8;border-radius:3px"></div>
           <div aria-hidden="true" style="position:absolute;left:50%;top:55px;height:19px;border-left:2px solid #555"></div>
           <div id="emotion-marker-a" data-question-key="Emotion_A" role="slider" tabindex="0" aria-label="Sound A emotion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${state.Emotion_A}"
-            style="position:absolute;left:${state.Emotion_A}%;top:16px;transform:translateX(-50%);width:44px;height:44px;border-radius:50%;background:#3273dc;color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:grab;touch-action:none;user-select:none">A</div>
+            style="position:absolute;left:${state.Emotion_A}%;top:12px;transform:translateX(-50%);width:48px;height:48px;border-radius:50%;background:#3273dc;color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:grab;touch-action:none;user-select:none">A</div>
           <div id="emotion-marker-b" data-question-key="Emotion_B" role="slider" tabindex="0" aria-label="Sound B emotion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${state.Emotion_B}"
-            style="position:absolute;left:${state.Emotion_B}%;top:69px;transform:translateX(-50%);width:44px;height:44px;border-radius:50%;background:#d95f59;color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:grab;touch-action:none;user-select:none">B</div>
-          <span style="position:absolute;top:116px;left:50%;transform:translateX(-50%)">neutral</span>
+            style="position:absolute;left:${state.Emotion_B}%;top:69px;transform:translateX(-50%);width:48px;height:48px;border-radius:50%;background:#d95f59;color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:grab;touch-action:none;user-select:none">B</div>
+          <span style="position:absolute;top:121px;left:50%;transform:translateX(-50%)">neutral</span>
         </div>
         <strong style="text-align:left">${emotionQuestion.right.split(',').map(word => `<span style="display:block">${word.trim()}</span>`).join('')}</strong>
       </div>
@@ -2504,7 +2504,7 @@ function buildPairedSurvey(jsPsych, questions, options = {}) {
   const trial = isPhase2
     ? buildRelativeEmotionTrial(jsPsych, settings) : buildSliderSurveyTrial(jsPsych, questions, settings);
   const load = trial.on_load, finish = trial.on_finish;
-  trial.stimulus = `<div class="survey-wrap paired-survey">${['A', 'B'].map(role => `<fieldset class="audibility-options"><legend>Sound ${role}: ${isPhase2 ? 'Did you hear anything?' : 'did you hear something?'}</legend><label><input type="radio" name="heard-${role}" value="no"> No, I didn’t hear anything</label><label><input type="radio" name="heard-${role}" value="yes"> Yes, I heard something</label></fieldset>`).join('')}<div id="paired-ratings">${trial.stimulus}</div></div>`;
+  trial.stimulus = `<div class="survey-wrap paired-survey"><div class="paired-audibility">${['A', 'B'].map(role => `<fieldset class="audibility-options"><legend>Sound ${role}: ${isPhase2 ? 'Did you hear anything?' : 'did you hear something?'}</legend><label><input type="radio" name="heard-${role}" value="no"> No, I didn’t hear anything</label><label><input type="radio" name="heard-${role}" value="yes"> Yes, I heard something</label></fieldset>`).join('')}</div><div id="paired-ratings">${trial.stimulus}</div></div>`;
   trial.on_load = () => {
     heard.A = heard.B = null; ratingsReady = false; update = null;
     load();
