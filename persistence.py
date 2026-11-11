@@ -37,7 +37,13 @@ def migrate():
             valid INTEGER NOT NULL DEFAULT 1 CHECK(valid IN (0,1)),
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY(prolific_id,phase))''')
-        conn.execute('CREATE UNIQUE INDEX IF NOT EXISTS valid_phase_slot ON phase_assignments(phase,user_id) WHERE valid=1')
+        if 'shared_slot' not in {r[1] for r in conn.execute('PRAGMA table_info(phase_assignments)')}:
+            conn.execute('ALTER TABLE phase_assignments ADD COLUMN shared_slot INTEGER NOT NULL DEFAULT 0 CHECK(shared_slot IN (0,1))')
+            conn.execute('DROP INDEX IF EXISTS valid_phase_slot')
+        conn.execute('CREATE UNIQUE INDEX IF NOT EXISTS valid_phase_slot ON phase_assignments(phase,user_id) WHERE valid=1 AND shared_slot=0')
+        conn.execute('''CREATE TABLE IF NOT EXISTS phase_assignment_overrides (
+            phase TEXT PRIMARY KEY CHECK(phase IN ('phase1','phase2','phase3')),
+            user_id INTEGER NOT NULL CHECK(user_id BETWEEN 1 AND 512))''')
         if new_assignments:
             # Preserve only phases actually started; unused phases start allocating at 1.
             assignments = {}
@@ -72,6 +78,10 @@ def assign(prolific_id, phase='phase1'):
         row=conn.execute('SELECT user_id,valid FROM phase_assignments WHERE prolific_id=? AND phase=?',(prolific_id,phase)).fetchone()
         if row:
             user, valid = row['user_id'], row['valid']
+        elif override := conn.execute('SELECT user_id FROM phase_assignment_overrides WHERE phase=?',(phase,)).fetchone():
+            user, valid = override['user_id'], 1
+            conn.execute('INSERT INTO phase_assignments(prolific_id,phase,user_id,shared_slot) VALUES (?,?,?,1)',
+                         (prolific_id,phase,user))
         else:
             used={r[0] for r in conn.execute('SELECT user_id FROM phase_assignments WHERE phase=? AND valid=1',(phase,))}
             invalid={r[0] for r in conn.execute('SELECT user_id FROM phase_assignments WHERE phase=? AND valid=0',(phase,))}
