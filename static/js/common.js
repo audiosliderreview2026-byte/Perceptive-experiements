@@ -2046,13 +2046,10 @@ function buildRelativeEmotionTrial(
   } = {}
 ) {
 
-  // Initial positions are deliberately separated slightly
-  // so that both markers remain visible.
-  //
-  // Participants must move BOTH markers before submitting.
+  // Separate rows keep both markers selectable at the neutral midpoint.
   const state = {
-    Emotion_A: 45,
-    Emotion_B: 55,
+    Emotion_A: 50,
+    Emotion_B: 50,
   };
 
   const touched = {
@@ -2068,20 +2065,21 @@ function buildRelativeEmotionTrial(
     <div class="survey-wrap">
       ${tag}
       <h2 style="font-size:1.5rem;line-height:1.4">${emotionQuestion.text}</h2>
-      <p>Please place both sounds on the scale below, going from <strong>${emotionQuestion.left}</strong> to <strong>${emotionQuestion.right}</strong>.</p>
+      <p>Please place both sounds on the emotional scale below.</p>
       <p><strong style="color:#3273dc">● Sound A (blue)</strong> &nbsp; <strong style="color:#d95f59">● Sound B (red)</strong></p>
-      <div style="display:flex;justify-content:space-between;gap:20px;margin-top:30px">
-        <strong>${emotionQuestion.left}</strong><strong>${emotionQuestion.right}</strong>
+      <div style="display:grid;grid-template-columns:6em minmax(0,1fr) 6em;align-items:center;gap:4px">
+        <strong style="text-align:right">${emotionQuestion.left.split(',').map(word => `<span style="display:block">${word.trim()}</span>`).join('')}</strong>
+        <div id="emotion-scale-container" style="position:relative;height:145px;margin:0 24px;touch-action:none">
+          <div style="position:absolute;top:62px;left:0;right:0;height:5px;background:#b8b8b8;border-radius:3px"></div>
+          <div aria-hidden="true" style="position:absolute;left:50%;top:55px;height:19px;border-left:2px solid #555"></div>
+          <div id="emotion-marker-a" data-question-key="Emotion_A" role="slider" tabindex="0" aria-label="Sound A emotion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${state.Emotion_A}"
+            style="position:absolute;left:${state.Emotion_A}%;top:16px;transform:translateX(-50%);width:44px;height:44px;border-radius:50%;background:#3273dc;color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:grab;touch-action:none;user-select:none">A</div>
+          <div id="emotion-marker-b" data-question-key="Emotion_B" role="slider" tabindex="0" aria-label="Sound B emotion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${state.Emotion_B}"
+            style="position:absolute;left:${state.Emotion_B}%;top:69px;transform:translateX(-50%);width:44px;height:44px;border-radius:50%;background:#d95f59;color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:grab;touch-action:none;user-select:none">B</div>
+          <span style="position:absolute;top:116px;left:50%;transform:translateX(-50%)">neutral</span>
+        </div>
+        <strong style="text-align:left">${emotionQuestion.right.split(',').map(word => `<span style="display:block">${word.trim()}</span>`).join('')}</strong>
       </div>
-      <div id="emotion-scale-container" style="position:relative;height:130px;margin:10px 24px;touch-action:none">
-        <div style="position:absolute;top:62px;left:0;right:0;height:5px;background:#b8b8b8;border-radius:3px"></div>
-        <div aria-hidden="true" style="position:absolute;left:50%;top:55px;height:19px;border-left:2px solid #555"></div>
-        <div id="emotion-marker-a" data-question-key="Emotion_A" role="slider" tabindex="0" aria-label="Sound A emotion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="45"
-          style="position:absolute;left:45%;top:16px;transform:translateX(-50%);width:44px;height:44px;border-radius:50%;background:#3273dc;color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:grab;touch-action:none;user-select:none">A</div>
-        <div id="emotion-marker-b" data-question-key="Emotion_B" role="slider" tabindex="0" aria-label="Sound B emotion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="55"
-          style="position:absolute;left:55%;top:69px;transform:translateX(-50%);width:44px;height:44px;border-radius:50%;background:#d95f59;color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:grab;touch-action:none;user-select:none">B</div>
-      </div>
-      
     </div>
   `;
 
@@ -2430,7 +2428,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
         <li>Make sure you are on a computer or laptop (not a smartphone) and in a quiet place.</li>
         <li>Make sure you won't be disturbed for the duration of the experiment (tell the people around you that you should not be disturbed, close all other applications on your device, put you phone away and in "do not disturb" mode, etc.)</li>
         <li>Put this browser window in <strong>full screen</strong>.</li></ul>
-        <p>The study has three stages: <strong>calibration → practice → main study</strong>. It should last about <strong>${phase === 'phase1' ? '1h15' : '1 hour'}</strong>, with a 2min pause every 10-15min.</p>
+        <p>The study has three stages: <strong>calibration → practice → main study</strong>. It should last about <strong>${phase === 'phase1' ? '1h15' : '1 hour'}</strong>, with a 2-minute pause every ${phase === 'phase1' ? '15–20' : '10–15'} minutes.</p>
         <p>For this study to yield valid scientific conclusions, we rely on you to carefully follow the instructions, listen attentively to the sounds and answer the questions honestly and thoughtfully. Various technical and attention checks have been included and we reserve the right to reject your submission should you fail too many of these checks.</p><p><strong>Use of AI is prohibited.</strong> We systematically check for AI-assisted/botted submissions and will reject them.</p><p>Thank you for your time and contribution to this study!</p></div>`,
         choices: ['Continue'] });
     }
@@ -2443,7 +2441,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
       <p>If for any reason you get disconnected, use the link in Prolific to reconnect to the experiment. You will automatically continue where you left off.</p></div>` : `<div class="screen"><h2>Practice</h2>
       <p>You will now complete <strong>${plan.training.length} practice trials</strong> to familiarize yourself with the task. At the beginning of each trial, you will hear <strong>two 5-second sounds</strong>: Sound A, then Sound B.</p>
       <p>Then we will ask you:</p><ol class="instruction-list"><li>Whether you heard anything in Sound A and in Sound B, separately.</li>
-      ${phase === 'phase2' ? `<li>${questions[0].text} Place <strong>blue A and red B</strong> on the same scale, from <strong>${questions[0].left}</strong> to <strong>${questions[0].right}</strong>. They may occupy the same position.</li>` : questions.map(q => `<li>${q.text} Use the scale from <strong>${q.left}</strong> to <strong>${q.right}</strong>.</li>`).join('')}
+      ${phase === 'phase2' ? `<li>How did the sounds feel on a scale from <strong>calm/relaxed/quiet</strong> on one end to <strong>angry/aggressive/violent</strong> on the other end? You will place both sounds on that scale.</li>` : questions.map(q => `<li>${q.text} Use the scale from <strong>${q.left}</strong> to <strong>${q.right}</strong>.</li>`).join('')}
       </ol><p>There is no preferred answer: give your own impression.</p>
       <p>In practice, as in the main experiment, each sound will be played <strong>only once and cannot be replayed</strong>. Please listen carefully. Keep your headphones on and your calibrated volume unchanged.</p>
       <p>If you get disconnected, use the link in Prolific to reconnect. You will automatically continue where you left off.</p></div>`,
@@ -2497,15 +2495,16 @@ function buildSurveyTrial(jsPsych, questions, options = {}) {
 }
 
 function buildPairedSurvey(jsPsych, questions, options = {}) {
+  const isPhase2 = window.EXPERIMENT_PHASE === 'phase2';
   const heard = { A: null, B: null };
   let ratingsReady = false;
   let update = null;
   const settings = { ...options, emotionQuestion: questions[0],
     onRatingChange(ready) { ratingsReady = ready; if (update) update(); } };
-  const trial = window.EXPERIMENT_PHASE === 'phase2'
+  const trial = isPhase2
     ? buildRelativeEmotionTrial(jsPsych, settings) : buildSliderSurveyTrial(jsPsych, questions, settings);
   const load = trial.on_load, finish = trial.on_finish;
-  trial.stimulus = `<div class="survey-wrap paired-survey">${['A', 'B'].map(role => `<fieldset class="audibility-options"><legend>Sound ${role}: did you hear something?</legend><label><input type="radio" name="heard-${role}" value="no"> No, I didn’t hear anything</label><label><input type="radio" name="heard-${role}" value="yes"> Yes, I heard something</label></fieldset>`).join('')}<div id="paired-ratings">${trial.stimulus}</div></div>`;
+  trial.stimulus = `<div class="survey-wrap paired-survey">${['A', 'B'].map(role => `<fieldset class="audibility-options"><legend>Sound ${role}: ${isPhase2 ? 'Did you hear anything?' : 'did you hear something?'}</legend><label><input type="radio" name="heard-${role}" value="no"> No, I didn’t hear anything</label><label><input type="radio" name="heard-${role}" value="yes"> Yes, I heard something</label></fieldset>`).join('')}<div id="paired-ratings">${trial.stimulus}</div></div>`;
   trial.on_load = () => {
     heard.A = heard.B = null; ratingsReady = false; update = null;
     load();
