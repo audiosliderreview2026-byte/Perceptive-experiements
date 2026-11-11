@@ -300,6 +300,7 @@ body { background: #eef2f7; }
 }
 .paired-audibility label { padding: 5px 9px; margin: 3px 0; }
 .paired-survey #paired-ratings { margin-top: clamp(20px, 4vh, 32px); }
+.paired-survey #paired-ratings:has(> .emotion-survey) { margin-top: clamp(36px, 9vh, 88px); }
 .paired-survey #paired-ratings > .survey-wrap { padding-top: 0; }
 .emotion-survey h2 { margin: 8px 0 4px; }
 .emotion-survey p { margin: 4px 0; }

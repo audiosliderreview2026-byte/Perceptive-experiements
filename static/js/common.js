@@ -2443,6 +2443,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
       <p>Then we will ask you:</p><ol class="instruction-list"><li>Whether you heard anything in Sound A and in Sound B, separately.</li>
       ${phase === 'phase2' ? `<li>How did the sounds feel on a scale from <strong>calm/relaxed/quiet</strong> on one end to <strong>angry/aggressive/violent</strong> on the other end? You will place both sounds on that scale.</li>` : questions.map(q => `<li>${q.text} Use the scale from <strong>${q.left}</strong> to <strong>${q.right}</strong>.</li>`).join('')}
       </ol><p>There is no preferred answer: give your own impression.</p>
+      ${phase === 'phase2' ? '<p>A lot, but not all, of the sounds will be footstep sounds. Please tell us how the sounds feel to you, whether or not they contain footsteps.</p>' : ''}
       <p>In practice, as in the main experiment, each sound will be played <strong>only once and cannot be replayed</strong>. Please listen carefully. Keep your headphones on and your calibrated volume unchanged.</p>
       <p>If you get disconnected, use the link in Prolific to reconnect. You will automatically continue where you left off.</p></div>`,
       choices: ['Start practice'], on_load() { setStudyStage('Practice'); } });
