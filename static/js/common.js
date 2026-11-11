@@ -2514,16 +2514,19 @@ function buildSurveyTrial(jsPsych, questions, options = {}) {
 
 function buildPhaseThreeSurvey(jsPsych, [footstepQuestion, ...questions], options) {
   const roles = ['A', 'B'];
-  const footstepLabels = [footstepQuestion.left, footstepQuestion.answer2, footstepQuestion.answer3];
-  const footsteps = { A: null, B: null };
-  const backgrounds = { A: null, B: null };
+  const footstepLabels = [
+    'I didn’t hear anything at all or I heard something, but there were clearly no footsteps',
+    footstepQuestion.answer3,
+  ];
+  const footsteps = { A: 2, B: 2 };
+  const backgrounds = { A: true, B: true };
   let moved = new Set();
   let update;
   const bothHaveFootsteps = () => roles.every(role => footsteps[role] === 2);
   const bothHaveBackground = () => roles.every(role => backgrounds[role] === true);
   const backgroundQuestions = `<div class="paired-audibility">${roles.map(role =>
     `<fieldset class="audibility-options"><legend>Sound ${role}: Was there a background (for example, voices, music and other ambient sounds)?</legend>
-      <label><input type="radio" name="background-${role}" value="yes"> Yes</label>
+      <label><input type="radio" name="background-${role}" value="yes" checked> Yes</label>
       <label><input type="radio" name="background-${role}" value="no"> No</label>
     </fieldset>`).join('')}</div>`;
   const trial = buildSliderSurveyTrial(jsPsych, questions, {
@@ -2537,12 +2540,13 @@ function buildPhaseThreeSurvey(jsPsych, [footstepQuestion, ...questions], option
     <div class="paired-audibility">${roles.map(role =>
       `<fieldset class="audibility-options"><legend>Sound ${role}: ${footstepQuestion.text}</legend>
         ${footstepLabels.map((label, index) =>
-          `<label><input type="radio" name="footsteps-${role}" value="${index}"> ${label}</label>`).join('')}
+          `<label><input type="radio" name="footsteps-${role}" value="${index + 1}"${index === 1 ? ' checked' : ''}> ${label}</label>`).join('')}
       </fieldset>`).join('')}</div>
     <div id="paired-ratings" hidden>${trial.stimulus}</div>
   </div>`;
   trial.on_load = () => {
-    footsteps.A = footsteps.B = backgrounds.A = backgrounds.B = null;
+    footsteps.A = footsteps.B = 2;
+    backgrounds.A = backgrounds.B = true;
     moved = new Set();
     load();
     const submit = document.querySelector('#jspsych-html-button-response-btngroup button');
@@ -2551,16 +2555,12 @@ function buildPhaseThreeSurvey(jsPsych, [footstepQuestion, ...questions], option
     update = () => {
       ratings.hidden = !bothHaveFootsteps();
       environment.hidden = !bothHaveBackground();
-      submit.disabled = !bothHaveFootsteps() || roles.some(role => backgrounds[role] === null) ||
+      submit.disabled = bothHaveFootsteps() &&
         questions.some((question, index) => (question.key !== 'environment' || bothHaveBackground()) && !moved.has(index));
     };
     for (const role of roles) {
       document.querySelectorAll(`input[name="footsteps-${role}"]`).forEach(input => input.addEventListener('change', () => {
         footsteps[role] = Number(input.value);
-        if (roles.every(sound => footsteps[sound] !== null) && !bothHaveFootsteps()) {
-          jsPsych.finishTrial({ response: null });
-          return;
-        }
         update();
       }));
       document.querySelectorAll(`input[name="background-${role}"]`).forEach(input => input.addEventListener('change', () => {
@@ -2574,7 +2574,8 @@ function buildPhaseThreeSurvey(jsPsych, [footstepQuestion, ...questions], option
     const skip = !bothHaveFootsteps();
     Object.assign(data, {
       audibilite_son_A: footsteps.A, audibilite_son_B: footsteps.B,
-      heard_sound_A: footsteps.A !== 0, heard_sound_B: footsteps.B !== 0,
+      heard_sound_A: footsteps.A === 2 ? true : null, heard_sound_B: footsteps.B === 2 ? true : null,
+      footstep_response_format: 'binary',
       heard_background_A: skip ? null : backgrounds.A,
       heard_background_B: skip ? null : backgrounds.B,
       ratings_skipped: skip, skip_reason: skip ? 'no_plausible_footsteps' : null,
@@ -2591,7 +2592,7 @@ function buildPhaseThreeSurvey(jsPsych, [footstepQuestion, ...questions], option
 
 function buildPairedSurvey(jsPsych, questions, options = {}) {
   const isPhase2 = window.EXPERIMENT_PHASE === 'phase2';
-  const heard = { A: null, B: null };
+  const heard = { A: true, B: true };
   let ratingsReady = false;
   let update = null;
   const settings = { ...options, emotionQuestion: questions[0],
@@ -2599,15 +2600,15 @@ function buildPairedSurvey(jsPsych, questions, options = {}) {
   const trial = isPhase2
     ? buildRelativeEmotionTrial(jsPsych, settings) : buildSliderSurveyTrial(jsPsych, questions, settings);
   const load = trial.on_load, finish = trial.on_finish;
-  trial.stimulus = `<div class="survey-wrap paired-survey"><div class="paired-audibility">${['A', 'B'].map(role => `<fieldset class="audibility-options"><legend>Sound ${role}: ${isPhase2 ? 'Did you hear anything?' : 'did you hear something?'}</legend><label><input type="radio" name="heard-${role}" value="no"> No, I didn’t hear anything</label><label><input type="radio" name="heard-${role}" value="yes"> Yes, I heard something</label></fieldset>`).join('')}</div><div id="paired-ratings">${trial.stimulus}</div></div>`;
+  trial.stimulus = `<div class="survey-wrap paired-survey"><div class="paired-audibility">${['A', 'B'].map(role => `<fieldset class="audibility-options"><legend>Sound ${role}: ${isPhase2 ? 'Did you hear anything?' : 'did you hear something?'}</legend><label><input type="radio" name="heard-${role}" value="no"> No, I didn’t hear anything</label><label><input type="radio" name="heard-${role}" value="yes" checked> Yes, I heard something</label></fieldset>`).join('')}</div><div id="paired-ratings">${trial.stimulus}</div></div>`;
   trial.on_load = () => {
-    heard.A = heard.B = null; ratingsReady = false; update = null;
+    heard.A = heard.B = true; ratingsReady = false; update = null;
     load();
     const submit = document.querySelector('#jspsych-html-button-response-btngroup button');
     update = () => {
       const skip = heard.A === false || heard.B === false;
       document.getElementById('paired-ratings').hidden = skip;
-      submit.disabled = heard.A === null || heard.B === null || (!skip && !ratingsReady);
+      submit.disabled = !skip && !ratingsReady;
     };
     for (const role of ['A', 'B']) document.querySelectorAll(`input[name="heard-${role}"]`).forEach(input => input.addEventListener('change', () => { heard[role] = input.value === 'yes'; update(); }));
     update();
@@ -2756,15 +2757,15 @@ function buildPhaseOneSurvey(jsPsych, questions, options) {
   const trial = buildSliderSurveyTrial(jsPsych, questions.slice(1), options);
   const originalLoad = trial.on_load;
   const originalFinish = trial.on_finish;
-  let answer = null;
+  let answer = 2;
   const moved = new Set();
-  trial.stimulus = `<div class="survey-wrap phase-one-survey"><fieldset class="audibility-options"><legend>Did you hear footsteps?</legend>${[questions[0].left, questions[0].answer2, questions[0].answer3].map((label, index) => `<label><input type="radio" name="heard" value="${index}"> ${label}</label>`).join('')}</fieldset><div id="phase-one-ratings">${trial.stimulus}</div></div>`;
+  trial.stimulus = `<div class="survey-wrap phase-one-survey"><fieldset class="audibility-options"><legend>Did you hear footsteps?</legend>${[questions[0].left, questions[0].answer2, questions[0].answer3].map((label, index) => `<label><input type="radio" name="heard" value="${index}"${index === 2 ? ' checked' : ''}> ${label}</label>`).join('')}</fieldset><div id="phase-one-ratings">${trial.stimulus}</div></div>`;
   trial.on_load = () => {
-    originalLoad(); answer = null; moved.clear();
+    originalLoad(); answer = 2; moved.clear();
     const submit = document.querySelector('#jspsych-html-button-response-btngroup button');
     const update = () => {
       document.getElementById('phase-one-ratings').hidden = answer === 0;
-      submit.disabled = answer === null || (answer !== 0 && moved.size !== questions.length - 1);
+      submit.disabled = answer !== 0 && moved.size !== questions.length - 1;
     };
     document.querySelectorAll('input[name="heard"]').forEach(input => input.addEventListener('change', () => { answer = Number(input.value); update(); }));
     questions.slice(1).forEach((q, index) => document.getElementById(`q${index}`).addEventListener('input', () => { moved.add(index); update(); }));

@@ -243,9 +243,13 @@ def validate_payload(data,unit,phase):
             if p.get('questionnaire_version') != '2026-11-11':
                 raise ControlError('Refresh the study page for the current phase 3 questions.', 'invalid_response', 422)
             footsteps = [p.get(f'audibilite_son_{role}') for role in 'AB']
-            if any(type(answer) is not int or answer not in (0, 1, 2) for answer in footsteps):
+            binary = p.get('footstep_response_format') == 'binary'
+            choices = (1, 2) if binary else (0, 1, 2)
+            if any(type(answer) is not int or answer not in choices for answer in footsteps):
                 raise ControlError('Both footstep answers are required.', 'invalid_response', 422)
-            if any(p.get(f'heard_sound_{role}') is not (answer != 0) for role, answer in zip('AB', footsteps)):
+            # The combined negative choice does not specify whether any sound was audible.
+            heard = [None if binary and answer == 1 else answer != 0 for answer in footsteps]
+            if any(p.get(f'heard_sound_{role}') is not value for role, value in zip('AB', heard)):
                 raise ControlError('Inconsistent audibility answer.', 'invalid_response', 422)
             skip = any(answer != 2 for answer in footsteps)
             backgrounds = [p.get(f'heard_background_{role}') for role in 'AB']
