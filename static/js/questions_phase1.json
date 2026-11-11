@@ -15,7 +15,7 @@
   },
   {
     "key": "plausibilite",
-    "text": "Irrespective of the presence of footsteps and ignoring any audio artifact, how realistic did the sound feel to you? Could you have heard it in the real world?",
+    "text": "<u><strong>Irrespective of the presence of footsteps</strong></u> and ignoring any audio artifact, did the sound feel natural to you? Like something that you could actually hear in the real world? Or did it feel synthetic/made-up?",
     "left": "Completely made-up/implausible",
     "right": "Completely natural",
     "middle": "Somewhat natural"
