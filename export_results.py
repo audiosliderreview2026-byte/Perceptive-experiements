@@ -10,6 +10,7 @@ def export(database, output):
     for path in (Path(__file__).parent/'static/js').glob('questions_phase*.json'):
         question_keys.update(item['key'] for item in json.loads(path.read_text()))
     question_keys.update(['audibilite_son','heard_sound','heard_sound_A','heard_sound_B',
+                         'audibilite_son_A','audibilite_son_B','heard_background_A','heard_background_B',
                          'volume_changed','volume_change_reason','general_feedback','questionnaire_version',
                          'attention_kind','selected_number','expected_digit','response','answer','correct','expected_response','rt','screen_duration_ms','timing_complete','ratings_skipped','skip_reason'])
     with sqlite3.connect(database) as conn, open(output,'w') as stream:

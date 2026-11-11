@@ -2379,14 +2379,21 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
     await flushStudyOutbox();
     window.EXPERIMENT_PHASE = phase;
 
-    const [assigned, questions, trainingManifest, phaseOneQuestions] = await Promise.all([
+    const [assigned, phaseQuestions, trainingManifest, phaseOneQuestions] = await Promise.all([
       fetchExperimentJson(`/api/trial-order?phase=${phase}&userID=${userID}`),
       fetchExperimentJson(`/static/js/questions_${phase}.json`),
       fetchExperimentJson('/static/stimulis/training/manifest.json'),
       phase === 'phase3' ? fetchExperimentJson('/static/js/questions_phase1.json') : null,
     ]);
     validateAssignedPlan(assigned, phase, userID);
-    if (!Array.isArray(questions) || !questions.length) throw new Error('Questionnaire is empty or invalid.');
+    if (!Array.isArray(phaseQuestions) || !phaseQuestions.length) throw new Error('Questionnaire is empty or invalid.');
+    if (phase === 'phase3' && (
+      phaseOneQuestions?.[0]?.key !== 'audibilite_son' ||
+      phaseQuestions.map(question => question.key).join(',') !== 'ground_type,walker_identity,environment'
+    )) {
+      throw new Error('Phase 3 questionnaire files are out of date. Deploy the updated question files and reload.');
+    }
+    const questions = phase === 'phase3' ? [phaseOneQuestions[0], ...phaseQuestions] : phaseQuestions;
 
     const state = await loadPhaseSession(phase);
     let session = state.session;
@@ -2457,7 +2464,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
       <p>If you get disconnected, use the link in Prolific to reconnect. You will automatically continue where you left off.</p></div>`,
       choices: ['Start practice'], on_load() { setStudyStage('Practice'); } });
     timeline.push(...training.map(trial => ({
-      timeline: [buildStudyPermission(experimentalTrialKey('training', trial.trialIndex)), ...buildTrial(trial, questions, true, phaseOneQuestions?.[0])],
+      timeline: [buildStudyPermission(experimentalTrialKey('training', trial.trialIndex)), ...buildTrial(trial, questions, true)],
       on_timeline_start() { setStudyStage(`Practice ${plan.training.indexOf(trial) + 1} / ${plan.training.length}`); },
     })));
     if (training.length) timeline.push({ type: jsPsychHtmlButtonResponse,
@@ -2483,7 +2490,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
           emittedCatches.add(check.id);
         }
       }
-      timeline.push({ timeline: [buildStudyPermission(experimentalTrialKey('test', trial.trialIndex)), ...buildTrial(trial, questions, false, phaseOneQuestions?.[0])], on_timeline_start() { setStudyStage(null); } });
+      timeline.push({ timeline: [buildStudyPermission(experimentalTrialKey('test', trial.trialIndex)), ...buildTrial(trial, questions, false)], on_timeline_start() { setStudyStage(null); } });
     }
     for (const check of catches) {
       if (!emittedCatches.has(check.id) && !completed.has(`attention|${check.id}`)) {
@@ -2505,9 +2512,8 @@ function buildSurveyTrial(jsPsych, questions, options = {}) {
   return buildPairedSurvey(jsPsych, questions, options);
 }
 
-function buildPhaseThreeSurvey(jsPsych, questions, options) {
+function buildPhaseThreeSurvey(jsPsych, [footstepQuestion, ...questions], options) {
   const roles = ['A', 'B'];
-  const footstepQuestion = options.footstepQuestion;
   const footstepLabels = [footstepQuestion.left, footstepQuestion.answer2, footstepQuestion.answer3];
   const footsteps = { A: null, B: null };
   const backgrounds = { A: null, B: null };

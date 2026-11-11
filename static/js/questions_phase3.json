@@ -1,30 +1,23 @@
 [
   {
     "key": "ground_type",
-    "text": "Did it sound to you like the footsteps in sound A and sound B were produced on the same type of ground (for example, concrete, gravel, leaves, etc.)?",
-    "left": "Yes, completely",
-    "middle": "I don't know",
-    "right": "Not at all"
-  },
-  {
-    "key": "shoe_type",
-    "text": "Did it sound to you like the footsteps in sound A and sound B were produced by the same type of shoes (for example, sneakers, boots, heels, etc.)?",
-    "left": "Yes, completely",
-    "middle": "I don't know",
-    "right": "Not at all"
+    "text": "Did it sound like the person was walking over the same type of ground in both sounds (for example, concrete vs gravel vs leaves)?",
+    "left": "Not at all",
+    "middle": "Not sure",
+    "right": "Yes, completely"
   },
   {
     "key": "walker_identity",
-    "text": "Did it sound to you like the footsteps in sound A and sound B were produced by the same person, possibly in a different emotional state?",
-    "left": "Yes, completely",
-    "middle": "I don't know",
-    "right": "Not at all"
+    "text": "Did it sound like the same person was walking in both sounds? It’s fine if they sound angrier or calmer, as long as it could plausibly be the same person walking.",
+    "left": "Not at all",
+    "middle": "Not sure",
+    "right": "Yes, completely"
   },
   {
     "key": "environment",
-    "text": "Did it sound to you like the footsteps' background in sound A and sound B were similar (for example, same voices and ambient sounds at the same time, etc.)?",
-    "left": "Yes, completely",
-    "middle": "I don't know",
-    "right": "Not at all"
+    "text": "Were the backgrounds the same in both sounds?",
+    "left": "Not at all",
+    "middle": "Not sure",
+    "right": "Yes, completely"
   }
 ]

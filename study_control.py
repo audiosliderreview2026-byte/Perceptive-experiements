@@ -238,6 +238,27 @@ def validate_payload(data,unit,phase):
     section=unit['section']
     if section in ('training','test'):
         keys=[q['key'] for q in unit['questions'] if q['key']!='audibilite_son']
+        if phase == 'phase3' and (p.get('questionnaire_version') == '2026-11-11' or 'shoe_type' not in keys):
+            # Existing sessions can have the previous four questions frozen in their units.
+            if p.get('questionnaire_version') != '2026-11-11':
+                raise ControlError('Refresh the study page for the current phase 3 questions.', 'invalid_response', 422)
+            footsteps = [p.get(f'audibilite_son_{role}') for role in 'AB']
+            if any(type(answer) is not int or answer not in (0, 1, 2) for answer in footsteps):
+                raise ControlError('Both footstep answers are required.', 'invalid_response', 422)
+            if any(p.get(f'heard_sound_{role}') is not (answer != 0) for role, answer in zip('AB', footsteps)):
+                raise ControlError('Inconsistent audibility answer.', 'invalid_response', 422)
+            skip = any(answer != 2 for answer in footsteps)
+            backgrounds = [p.get(f'heard_background_{role}') for role in 'AB']
+            if p.get('ratings_skipped') is not skip:
+                raise ControlError('Inconsistent skipped rating.', 'invalid_response', 422)
+            if any(answer is not None if skip else type(answer) is not bool for answer in backgrounds):
+                raise ControlError('Background answers must match the footstep responses.', 'invalid_response', 422)
+            for key in ('ground_type', 'walker_identity', 'environment'):
+                required = not skip and (key != 'environment' or all(backgrounds))
+                value = p.get(key)
+                if (required and not number(value)) or (not required and value is not None):
+                    raise ControlError('Ratings must match the footstep and background responses.', 'invalid_response', 422)
+            return {**p, **expected, 'training': section == 'training'}
         if phase=='phase1':
             if type(p.get('audibilite_son')) is not int or p['audibilite_son'] not in (0,1,2):raise ControlError('Invalid audibility answer.','invalid_response',422)
             skip=p['audibilite_son']==0
