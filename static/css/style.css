@@ -287,19 +287,19 @@ body { background: #eef2f7; }
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px 16px;
-  margin-bottom: 8px;
 }
 .paired-audibility .audibility-options {
   min-width: 0;
   margin: 0;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.35;
 }
 .paired-audibility legend {
-  font-size: 17px;
+  font-size: 18px;
   margin-bottom: 3px;
 }
 .paired-audibility label { padding: 5px 9px; margin: 3px 0; }
+.paired-survey #paired-ratings { margin-top: clamp(20px, 4vh, 32px); }
 .paired-survey #paired-ratings > .survey-wrap { padding-top: 0; }
 .emotion-survey h2 { margin: 8px 0 4px; }
 .emotion-survey p { margin: 4px 0; }
