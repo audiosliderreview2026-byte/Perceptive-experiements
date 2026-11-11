@@ -1,74 +1,84 @@
 {
   "phase2": [
     {
-      "alpha": -1.830837,
+      "alpha": null,
       "condition": "diverse",
       "context": null,
-      "edit_id": 28,
-      "edited": {
-        "audioPath": "/static/stimulis/training/phase2/01_edited.wav",
-        "durationSeconds": 5,
-        "soundId": "01_edited",
-        "soundType": "training",
-        "sourceId": "gravel",
-        "stimType": "edited"
-      },
+      "edit_id": null,
       "h2h_ms": null,
       "method": "semantic_editor",
-      "original": {
-        "audioPath": "/static/stimulis/training/phase2/01_reference.wav",
-        "durationSeconds": 5,
-        "soundId": "01_reference",
-        "soundType": "training",
-        "sourceId": "gravel",
-        "stimType": "original"
-      },
-      "pairType": "original_edit",
+      "pairType": "edited_edited",
       "pk_db": null,
       "pool": "training",
-      "raw_source_id": "gravel",
-      "reference": {
-        "audioPath": "/static/stimulis/training/phase2/01_reference.wav",
-        "durationSeconds": 5,
-        "soundId": "01_reference",
-        "soundType": "training",
-        "sourceId": "gravel",
-        "stimType": "original"
-      },
-      "segment": "first",
+      "raw_source_id": "leaves_2_chunk_048",
+      "segment": "second",
       "soundA": {
-        "audioPath": "/static/stimulis/training/phase2/01_reference.wav",
+        "audioPath": "/static/stimulis/training/phase2/01_a_leaves_2_chunk_048__edit_13__alpha_m4p715518__second_5-10s.wav",
         "durationSeconds": 5,
-        "soundId": "01_reference",
+        "soundId": "01_a_leaves_2_chunk_048__edit_13__alpha_m4p715518__second_5-10s",
         "soundType": "training",
-        "sourceId": "gravel",
-        "stimType": "original"
+        "sourceId": "leaves_2_chunk_048",
+        "stimType": "edited",
+        "alpha": -4.715518,
+        "edit_id": 13
       },
       "soundB": {
-        "audioPath": "/static/stimulis/training/phase2/01_edited.wav",
+        "audioPath": "/static/stimulis/training/phase2/01_b_leaves_2_chunk_048__edit_16__alpha_p9p130908__second_5-10s.wav",
         "durationSeconds": 5,
-        "soundId": "01_edited",
+        "soundId": "01_b_leaves_2_chunk_048__edit_16__alpha_p9p130908__second_5-10s",
         "soundType": "training",
-        "sourceId": "gravel",
-        "stimType": "edited"
+        "sourceId": "leaves_2_chunk_048",
+        "stimType": "edited",
+        "alpha": 9.130908,
+        "edit_id": 16
       },
-      "soundId": "gravel:28:first",
+      "soundId": "leaves_2_chunk_048:13:16:second",
       "soundType": "training",
-      "sound_A_role": "reference",
-      "sound_B_role": "transformed",
-      "source_id": "gravel",
-      "source_key": "gravel",
+      "source_id": "leaves_2_chunk_048",
+      "source_key": "leaves_2_chunk_048",
       "training": true,
-      "transformed": {
-        "audioPath": "/static/stimulis/training/phase2/01_edited.wav",
-        "durationSeconds": 5,
-        "soundId": "01_edited",
-        "soundType": "training",
-        "sourceId": "gravel",
-        "stimType": "edited"
-      },
       "trialIndex": 0,
       "trialKey": "phase2:training:0"
+    },
+    {
+      "alpha": null,
+      "condition": "youtube",
+      "context": "isolated",
+      "edit_id": null,
+      "h2h_ms": null,
+      "method": "semantic_editor",
+      "pairType": "edited_edited",
+      "pk_db": null,
+      "pool": "training",
+      "raw_source_id": "clip_08_7m10s_residual",
+      "segment": "second",
+      "soundA": {
+        "audioPath": "/static/stimulis/training/phase2/02_a_clip_08_7m10s_residual__edit_15__alpha_p7p159939__second_5-10s.wav",
+        "durationSeconds": 5,
+        "soundId": "02_a_clip_08_7m10s_residual__edit_15__alpha_p7p159939__second_5-10s",
+        "soundType": "training",
+        "sourceId": "clip_08_7m10s_residual",
+        "stimType": "edited",
+        "alpha": 7.159939,
+        "edit_id": 15
+      },
+      "soundB": {
+        "audioPath": "/static/stimulis/training/phase2/02_b_clip_08_7m10s_residual__edit_21__alpha_m4p693601__second_5-10s.wav",
+        "durationSeconds": 5,
+        "soundId": "02_b_clip_08_7m10s_residual__edit_21__alpha_m4p693601__second_5-10s",
+        "soundType": "training",
+        "sourceId": "clip_08_7m10s_residual",
+        "stimType": "edited",
+        "alpha": -4.693601,
+        "edit_id": 21
+      },
+      "soundId": "clip_08_7m10s_residual:15:21:second",
+      "soundType": "training",
+      "source_id": "clip_08_7m10s_residual",
+      "source_key": "clip_08_7m10s_residual",
+      "training": true,
+      "trialIndex": 1,
+      "trialKey": "phase2:training:1"
     },
     {
       "alpha": -73.762776,
@@ -135,76 +145,6 @@
         "soundId": "02_edited",
         "soundType": "training",
         "sourceId": "wood",
-        "stimType": "edited"
-      },
-      "trialIndex": 1,
-      "trialKey": "phase2:training:1"
-    },
-    {
-      "alpha": 6.800854,
-      "condition": "diverse",
-      "context": null,
-      "edit_id": 17,
-      "edited": {
-        "audioPath": "/static/stimulis/training/phase2/03_edited.wav",
-        "durationSeconds": 5,
-        "soundId": "03_edited",
-        "soundType": "training",
-        "sourceId": "heels_concrete",
-        "stimType": "edited"
-      },
-      "h2h_ms": null,
-      "method": "semantic_editor",
-      "original": {
-        "audioPath": "/static/stimulis/training/phase2/03_reference.wav",
-        "durationSeconds": 5,
-        "soundId": "03_reference",
-        "soundType": "training",
-        "sourceId": "heels_concrete",
-        "stimType": "original"
-      },
-      "pairType": "original_edit",
-      "pk_db": null,
-      "pool": "training",
-      "raw_source_id": "heels_concrete",
-      "reference": {
-        "audioPath": "/static/stimulis/training/phase2/03_reference.wav",
-        "durationSeconds": 5,
-        "soundId": "03_reference",
-        "soundType": "training",
-        "sourceId": "heels_concrete",
-        "stimType": "original"
-      },
-      "segment": "first",
-      "soundA": {
-        "audioPath": "/static/stimulis/training/phase2/03_reference.wav",
-        "durationSeconds": 5,
-        "soundId": "03_reference",
-        "soundType": "training",
-        "sourceId": "heels_concrete",
-        "stimType": "original"
-      },
-      "soundB": {
-        "audioPath": "/static/stimulis/training/phase2/03_edited.wav",
-        "durationSeconds": 5,
-        "soundId": "03_edited",
-        "soundType": "training",
-        "sourceId": "heels_concrete",
-        "stimType": "edited"
-      },
-      "soundId": "heels_concrete:17:first",
-      "soundType": "training",
-      "sound_A_role": "reference",
-      "sound_B_role": "transformed",
-      "source_id": "heels_concrete",
-      "source_key": "heels_concrete",
-      "training": true,
-      "transformed": {
-        "audioPath": "/static/stimulis/training/phase2/03_edited.wav",
-        "durationSeconds": 5,
-        "soundId": "03_edited",
-        "soundType": "training",
-        "sourceId": "heels_concrete",
         "stimType": "edited"
       },
       "trialIndex": 2,

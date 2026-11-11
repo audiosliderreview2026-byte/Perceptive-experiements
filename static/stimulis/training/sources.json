@@ -15,5 +15,9 @@
   "/static/stimulis/training/phase3/03_edited.wav": "/static/stimulis/segments_5s/yt_edit+residual/clip_10_10m03s_residual__edit_24__alpha_m0p574324__second_5-10s.wav",
   "/static/stimulis/training/phase1/04_artefacts.wav": "/static/stimulis/segments_5s/test_yt_edits/clip_08_7m10s_residual__edit_16__alpha_m0p643934__first_0-5s.wav",
   "/static/stimulis/training/phase1/04_sound.wav": "/static/stimulis/segments_5s/test_yt_originals/clip_07_6m10s__first_0-5s.wav",
-  "/static/stimulis/training/phase1/02_clip10_edit08_second.wav": "/static/stimulis/segments_5s/test_yt_edits/clip_10_10m03s_residual__edit_08__alpha_p6p237120__second_5-10s.wav"
+  "/static/stimulis/training/phase1/02_clip10_edit08_second.wav": "/static/stimulis/segments_5s/test_yt_edits/clip_10_10m03s_residual__edit_08__alpha_p6p237120__second_5-10s.wav",
+  "/static/stimulis/training/phase2/01_a_leaves_2_chunk_048__edit_13__alpha_m4p715518__second_5-10s.wav": "/static/stimulis/segments_5s/test_plugin_edits/leaves_2_chunk_048__edit_13__alpha_m4p715518__second_5-10s.wav",
+  "/static/stimulis/training/phase2/01_b_leaves_2_chunk_048__edit_16__alpha_p9p130908__second_5-10s.wav": "/static/stimulis/segments_5s/test_plugin_edits/leaves_2_chunk_048__edit_16__alpha_p9p130908__second_5-10s.wav",
+  "/static/stimulis/training/phase2/02_a_clip_08_7m10s_residual__edit_15__alpha_p7p159939__second_5-10s.wav": "/static/stimulis/segments_5s/test_yt_edits/clip_08_7m10s_residual__edit_15__alpha_p7p159939__second_5-10s.wav",
+  "/static/stimulis/training/phase2/02_b_clip_08_7m10s_residual__edit_21__alpha_m4p693601__second_5-10s.wav": "/static/stimulis/segments_5s/test_yt_edits/clip_08_7m10s_residual__edit_21__alpha_m4p693601__second_5-10s.wav"
 }
