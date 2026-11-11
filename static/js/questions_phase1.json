@@ -8,7 +8,7 @@
   },
   {
     "key": "integrite",
-    "text": "Are there audio artefacts, as if something went wrong with the recording? (Background voices, music or other ambient sounds are <strong>not</strong> audio artefacts.)",
+    "text": "Are there audio artefacts, as if something went wrong with the recording? (As could happen with a faulty microphone or corrupted audio file. Background voices, music or other ambient sounds are <strong>not</strong> audio artefacts.)",
     "left": "Clearly no audio artefacts",
     "right": "Clearly noticeable audio artefacts",
     "middle": "Not sure"
