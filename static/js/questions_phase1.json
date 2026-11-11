@@ -8,7 +8,7 @@
   },
   {
     "key": "integrite",
-    "text": "Were there audio artefacts overlaid on the sound (crackling, electrical noise, intermittent background noise…)?",
+    "text": "Are there audio artefacts, as if something went wrong with the recording? (Background voices, music or other ambient sounds are <strong>not</strong> audio artefacts.)",
     "left": "Clearly no audio artefacts",
     "right": "Clearly noticeable audio artefacts",
     "middle": "Not sure"
@@ -16,8 +16,8 @@
   {
     "key": "plausibilite",
     "text": "Irrespective of the presence of footsteps and ignoring any audio artifact, how realistic did the sound feel to you? Could you have heard it in the real world?",
-    "left": "Not realistic at all",
-    "right": "Extremely realistic",
-    "middle": "Somewhat realistic"
+    "left": "Completely made-up/implausible",
+    "right": "Completely natural",
+    "middle": "Somewhat natural"
   }
 ]

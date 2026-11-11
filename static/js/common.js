@@ -996,43 +996,20 @@ function setExperimentProgress(
 }
 
 
-function incrementExperimentProgress() {
+let assignedMainTrialKeys = new Set();
+let confirmedMainTrialKeys = new Set();
 
-  if (
-    experimentProgress.completed <
-    experimentProgress.total
-  ) {
+function confirmMainTrial(job) {
+  if (job.url !== '/api/save-trial') return;
+  const response = JSON.parse(job.options.body);
+  const key = response.trial_key;
+  if (response.prolificID !== window.PROLIFIC_ID || response.phase !== window.EXPERIMENT_PHASE ||
+      response.section !== 'test' || !assignedMainTrialKeys.has(key) ||
+      confirmedMainTrialKeys.has(key)) return;
 
-    experimentProgress.completed +=
-      1;
-  }
-
-
-  updateExperimentProgressDisplay();
-
-
-  // Synchronize the visual progress bar.
-  if (
-    typeof jsPsych !== 'undefined' &&
-    jsPsych.progressBar &&
-    experimentProgress.total > 0
-  ) {
-
-    const proportion =
-      Math.max(
-        0,
-        Math.min(
-          1,
-          experimentProgress.completed /
-            experimentProgress.total
-        )
-      );
-
-    jsPsych.progressBar.progress =
-      proportion;
-  }
+  confirmedMainTrialKeys.add(key);
+  setExperimentProgress(confirmedMainTrialKeys.size, assignedMainTrialKeys.size);
 }
-
 
 let experimentStageLabel = null;
 function setStudyStage(label = null) {
@@ -1601,7 +1578,7 @@ function buildSliderSurveyTrial(
                 max="100"
                 step="1"
                 value="50"
-                aria-label="${question.text}"
+                aria-label="${question.text.replace(/<[^>]*>/g, '')}"
                 data-question-key="${question.key}"
               ><span class="rating-midpoint" aria-hidden="true"></span><span class="rating-midpoint-label">${question.middle || ''}</span></div>
 
@@ -1745,17 +1722,6 @@ function buildSliderSurveyTrial(
 
         payload:
           completeData,
-
-      }).then(result => {
-
-        if (
-          !isTraining &&
-          result &&
-          result.inserted === true
-        ) {
-
-          incrementExperimentProgress();
-        }
 
       }).catch(error => {
 
@@ -2251,17 +2217,6 @@ function buildRelativeEmotionTrial(
         payload:
           completeData,
 
-      }).then(result => {
-
-        if (
-          !isTraining &&
-          result &&
-          result.inserted === true
-        ) {
-
-          incrementExperimentProgress();
-        }
-
       }).catch(error => {
 
         console.error(
@@ -2448,7 +2403,9 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
     const isDone = (trial, section) => completed.has(experimentalTrialKey(section, trial.trialIndex));
     const remaining = plan.test.filter(trial => !isDone(trial, 'test'));
     const training = plan.training.filter(trial => !isDone(trial, 'training'));
-    setExperimentProgress(plan.test.length - remaining.length, plan.test.length);
+    assignedMainTrialKeys = new Set(plan.test.map(trial => experimentalTrialKey('test', trial.trialIndex)));
+    confirmedMainTrialKeys = new Set([...assignedMainTrialKeys].filter(key => completed.has(key)));
+    setExperimentProgress(confirmedMainTrialKeys.size, assignedMainTrialKeys.size);
 
     const audioPaths = [...training, ...remaining].flatMap(trial => phase === 'phase1'
       ? [trial.audioPath] : [trial.soundA.audioPath, trial.soundB.audioPath]);
@@ -2481,7 +2438,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
     if (training.length) timeline.push({ type: jsPsychHtmlButtonResponse,
       stimulus: phase === 'phase1' ? `<div class="screen"><h2>Practice</h2>
       <p>You will now complete <strong>${plan.training.length} trials</strong> to familiarize yourself with the task. At the beginning of each trial, you will listen to a <strong>5-second sound</strong>.</p>
-      <p>Then we will ask you:</p><ol class="instruction-list" type="i"><li>Whether you heard anything at all and, if you did, whether that included footsteps (or footsteps-like sounds).</li><li>Did you hear audio artefacts overlaid on the sound (crackling, electrical noise, intermittent background noise…)?</li><li>Irrespective of the presence of footsteps and ignoring any audio artefact, how realistic did the sound feel to you? Could you have heard it in the real world?</li></ol>
+      <p>Then we will ask you:</p><ol class="instruction-list" type="i"><li>Whether you heard anything at all and, if you did, whether that included footsteps (or footsteps-like sounds).</li><li>Did it sound like something went wrong with the recording, with some audio artefacts overlaid on the sound, as you could get, for example through saturation, a faulty microphone, electrical noise, a corrupted audio file, etc. (For this question, background voices, music or ambient sounds <strong>do not count</strong> as audio artifacts)</li><li><strong>Irrespective of the presence of footsteps</strong> and ignoring any audio artifact, did the sound feel natural to you? Like something that you could actually hear in the real world? Or did it feel synthetic/made-up?</li></ol>
       <p>In practice, as in the main experiment, each sound will be played <strong>only once and cannot be replayed</strong>. Please listen carefully.</p>
       <p>If for any reason you get disconnected, use the link in Prolific to reconnect to the experiment. You will automatically continue where you left off.</p></div>` : `<div class="screen"><h2>Practice</h2>
       <p>You will now complete <strong>${plan.training.length} practice trials</strong> to familiarize yourself with the task. At the beginning of each trial, you will hear <strong>two 5-second sounds</strong>: Sound A, then Sound B.</p>
@@ -2669,6 +2626,7 @@ async function transmitStudyJob(job) {
     }
     throw new Error(detail.error || `Saving failed: HTTP ${response.status}`);
   }
+  confirmMainTrial(job);
   putStudyOutbox(readStudyOutbox().filter(item => item.id !== job.id));
   if (!readStudyOutbox().length) document.getElementById('study-save-status')?.remove();
   return response;
