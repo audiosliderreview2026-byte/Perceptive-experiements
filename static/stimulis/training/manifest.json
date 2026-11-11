@@ -53,8 +53,19 @@
       "pk_db": null,
       "pool": "training",
       "raw_source_id": null,
-      "segment": null,
+      "segment": "second",
       "soundA": {
+        "audioPath": "/static/stimulis/training/phase2/02_a_leaves_1_chunk_019__edit_15__alpha_p1p682909__second_5-10s.wav",
+        "durationSeconds": 5,
+        "soundId": "02_a_leaves_1_chunk_019__edit_15__alpha_p1p682909__second_5-10s",
+        "soundType": "training",
+        "sourceId": "leaves_1_chunk_019",
+        "stimType": "edited",
+        "segment": "second",
+        "alpha": 1.682909,
+        "edit_id": 15
+      },
+      "soundB": {
         "audioPath": "/static/stimulis/training/phase2/02_a_dress_shoes_2__edit_04__alpha_m4p310235__second_5-10s.wav",
         "durationSeconds": 5,
         "soundId": "02_a_dress_shoes_2__edit_04__alpha_m4p310235__second_5-10s",
@@ -65,18 +76,7 @@
         "alpha": -4.310235,
         "edit_id": 4
       },
-      "soundB": {
-        "audioPath": "/static/stimulis/training/phase2/02_b_fast_boots_hay_chunk_042__edit_18__alpha_p4p590295__first_0-5s.wav",
-        "durationSeconds": 5,
-        "soundId": "02_b_fast_boots_hay_chunk_042__edit_18__alpha_p4p590295__first_0-5s",
-        "soundType": "training",
-        "sourceId": "fast_boots_hay_chunk_042",
-        "stimType": "edited",
-        "segment": "first",
-        "alpha": 4.590295,
-        "edit_id": 18
-      },
-      "soundId": "02_a_dress_shoes_2__edit_04__alpha_m4p310235__second_5-10s:02_b_fast_boots_hay_chunk_042__edit_18__alpha_p4p590295__first_0-5s",
+      "soundId": "02_a_leaves_1_chunk_019__edit_15__alpha_p1p682909__second_5-10s:02_a_dress_shoes_2__edit_04__alpha_m4p310235__second_5-10s",
       "soundType": "training",
       "source_id": null,
       "source_key": null,
