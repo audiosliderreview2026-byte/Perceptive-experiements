@@ -1541,6 +1541,7 @@ function buildSliderSurveyTrial(
     isTraining = false,
     tagLabel = 'Training',
     onRatingChange = () => {},
+    beforeQuestion = () => '',
   } = {}
 ) {
 
@@ -1558,6 +1559,7 @@ function buildSliderSurveyTrial(
     questions
       .map(
         (question, index) => `
+          ${beforeQuestion(question)}
           <div class="survey-item">
 
             <p class="survey-question">
@@ -1643,7 +1645,7 @@ function buildSliderSurveyTrial(
 
                 moved.add(index);
                 submit.disabled = moved.size !== questions.length;
-                onRatingChange(moved.size === questions.length);
+                onRatingChange(moved.size === questions.length, moved);
                 state[index] =
                   parseInt(
                     slider.value
@@ -1665,7 +1667,7 @@ function buildSliderSurveyTrial(
         (question, index) => {
 
           extra[question.key] =
-            trialData.ratings_skipped ? null : (state[index] !== undefined
+            (trialData.ratings_skipped || trialData.skipped_rating_keys?.includes(question.key)) ? null : (state[index] !== undefined
               ? state[index]
               : 50);
         }
@@ -2377,10 +2379,11 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
     await flushStudyOutbox();
     window.EXPERIMENT_PHASE = phase;
 
-    const [assigned, questions, trainingManifest] = await Promise.all([
+    const [assigned, questions, trainingManifest, phaseOneQuestions] = await Promise.all([
       fetchExperimentJson(`/api/trial-order?phase=${phase}&userID=${userID}`),
       fetchExperimentJson(`/static/js/questions_${phase}.json`),
       fetchExperimentJson('/static/stimulis/training/manifest.json'),
+      phase === 'phase3' ? fetchExperimentJson('/static/js/questions_phase1.json') : null,
     ]);
     validateAssignedPlan(assigned, phase, userID);
     if (!Array.isArray(questions) || !questions.length) throw new Error('Questionnaire is empty or invalid.');
@@ -2440,15 +2443,21 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
       <p>In practice, as in the main experiment, each sound will be played <strong>only once and cannot be replayed</strong>. Please listen carefully.</p>
       <p>If for any reason you get disconnected, use the link in Prolific to reconnect to the experiment. You will automatically continue where you left off.</p></div>` : `<div class="screen"><h2>Practice</h2>
       <p>You will now complete <strong>${plan.training.length} practice trials</strong> to familiarize yourself with the task. At the beginning of each trial, you will hear <strong>two 5-second sounds</strong>: Sound A, then Sound B.</p>
-      <p>Then we will ask you:</p><ol class="instruction-list"><li>Whether you heard anything in Sound A and in Sound B, separately.</li>
-      ${phase === 'phase2' ? `<li>How did the sounds feel on a scale from <strong>calm/relaxed/quiet</strong> on one end to <strong>angry/aggressive/violent</strong> on the other end? You will place both sounds on that scale.</li>` : questions.map(q => `<li>${q.text} Use the scale from <strong>${q.left}</strong> to <strong>${q.right}</strong>.</li>`).join('')}
+      <p>Then we will ask you:</p><ol class="instruction-list">
+      ${phase === 'phase2' ? `<li>Whether you heard anything in Sound A and in Sound B, separately.</li>
+      <li>How did the sounds feel on a scale from <strong>calm/relaxed/quiet</strong> on one end to <strong>angry/aggressive/violent</strong> on the other end? You will place both sounds on that scale.</li>` : `
+      <li>Whether Sound A contains sounds that may be footsteps. And same question for sound B.</li>
+      <li>Whether it sounded like the person was walking over the same type of ground in both sounds? (for example, concrete vs gravel vs leaves, etc.).</li>
+      <li>Whether it sounded like the same person was walking in both sounds (it's fine if they sound angrier or calmer, as long as it could plausibly be the same person walking).</li>
+      <li>Whether there was any background sounds (for example, voices, music and other ambient sounds).</li>
+      <li>Whether the background sounds were the same in both sounds.</li>`}
       </ol><p>There is no preferred answer: give your own impression.</p>
       ${phase === 'phase2' ? '<p>A lot, but not all, of the sounds will be footstep sounds. Please tell us how the sounds feel to you, whether or not they contain footsteps.</p>' : ''}
       <p>In practice, as in the main experiment, each sound will be played <strong>only once and cannot be replayed</strong>. Please listen carefully. Keep your headphones on and your calibrated volume unchanged.</p>
       <p>If you get disconnected, use the link in Prolific to reconnect. You will automatically continue where you left off.</p></div>`,
       choices: ['Start practice'], on_load() { setStudyStage('Practice'); } });
     timeline.push(...training.map(trial => ({
-      timeline: [buildStudyPermission(experimentalTrialKey('training', trial.trialIndex)), ...buildTrial(trial, questions, true)],
+      timeline: [buildStudyPermission(experimentalTrialKey('training', trial.trialIndex)), ...buildTrial(trial, questions, true, phaseOneQuestions?.[0])],
       on_timeline_start() { setStudyStage(`Practice ${plan.training.indexOf(trial) + 1} / ${plan.training.length}`); },
     })));
     if (training.length) timeline.push({ type: jsPsychHtmlButtonResponse,
@@ -2474,7 +2483,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
           emittedCatches.add(check.id);
         }
       }
-      timeline.push({ timeline: [buildStudyPermission(experimentalTrialKey('test', trial.trialIndex)), ...buildTrial(trial, questions, false)], on_timeline_start() { setStudyStage(null); } });
+      timeline.push({ timeline: [buildStudyPermission(experimentalTrialKey('test', trial.trialIndex)), ...buildTrial(trial, questions, false, phaseOneQuestions?.[0])], on_timeline_start() { setStudyStage(null); } });
     }
     for (const check of catches) {
       if (!emittedCatches.has(check.id) && !completed.has(`attention|${check.id}`)) {
@@ -2492,7 +2501,86 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
 // Audibility is recorded even when the subsequent ratings are skipped.
 function buildSurveyTrial(jsPsych, questions, options = {}) {
   if (window.EXPERIMENT_PHASE === 'phase1') return buildPhaseOneSurvey(jsPsych, questions, options);
+  if (window.EXPERIMENT_PHASE === 'phase3') return buildPhaseThreeSurvey(jsPsych, questions, options);
   return buildPairedSurvey(jsPsych, questions, options);
+}
+
+function buildPhaseThreeSurvey(jsPsych, questions, options) {
+  const roles = ['A', 'B'];
+  const footstepQuestion = options.footstepQuestion;
+  const footstepLabels = [footstepQuestion.left, footstepQuestion.answer2, footstepQuestion.answer3];
+  const footsteps = { A: null, B: null };
+  const backgrounds = { A: null, B: null };
+  let moved = new Set();
+  let update;
+  const bothHaveFootsteps = () => roles.every(role => footsteps[role] === 2);
+  const bothHaveBackground = () => roles.every(role => backgrounds[role] === true);
+  const backgroundQuestions = `<div class="paired-audibility">${roles.map(role =>
+    `<fieldset class="audibility-options"><legend>Sound ${role}: Was there a background (for example, voices, music and other ambient sounds)?</legend>
+      <label><input type="radio" name="background-${role}" value="yes"> Yes</label>
+      <label><input type="radio" name="background-${role}" value="no"> No</label>
+    </fieldset>`).join('')}</div>`;
+  const trial = buildSliderSurveyTrial(jsPsych, questions, {
+    ...options,
+    beforeQuestion: question => question.key === 'environment' ? backgroundQuestions : '',
+    onRatingChange(_, movedSliders) { moved = movedSliders; update(); },
+  });
+  const load = trial.on_load;
+  const finish = trial.on_finish;
+  trial.stimulus = `<div class="survey-wrap paired-survey">
+    <div class="paired-audibility">${roles.map(role =>
+      `<fieldset class="audibility-options"><legend>Sound ${role}: ${footstepQuestion.text}</legend>
+        ${footstepLabels.map((label, index) =>
+          `<label><input type="radio" name="footsteps-${role}" value="${index}"> ${label}</label>`).join('')}
+      </fieldset>`).join('')}</div>
+    <div id="paired-ratings" hidden>${trial.stimulus}</div>
+  </div>`;
+  trial.on_load = () => {
+    footsteps.A = footsteps.B = backgrounds.A = backgrounds.B = null;
+    moved = new Set();
+    load();
+    const submit = document.querySelector('#jspsych-html-button-response-btngroup button');
+    const ratings = document.getElementById('paired-ratings');
+    const environment = ratings.querySelector('[data-question-key="environment"]').closest('.survey-item');
+    update = () => {
+      ratings.hidden = !bothHaveFootsteps();
+      environment.hidden = !bothHaveBackground();
+      submit.disabled = !bothHaveFootsteps() || roles.some(role => backgrounds[role] === null) ||
+        questions.some((question, index) => (question.key !== 'environment' || bothHaveBackground()) && !moved.has(index));
+    };
+    for (const role of roles) {
+      document.querySelectorAll(`input[name="footsteps-${role}"]`).forEach(input => input.addEventListener('change', () => {
+        footsteps[role] = Number(input.value);
+        if (roles.every(sound => footsteps[sound] !== null) && !bothHaveFootsteps()) {
+          jsPsych.finishTrial({ response: null });
+          return;
+        }
+        update();
+      }));
+      document.querySelectorAll(`input[name="background-${role}"]`).forEach(input => input.addEventListener('change', () => {
+        backgrounds[role] = input.value === 'yes';
+        update();
+      }));
+    }
+    update();
+  };
+  trial.on_finish = data => {
+    const skip = !bothHaveFootsteps();
+    Object.assign(data, {
+      audibilite_son_A: footsteps.A, audibilite_son_B: footsteps.B,
+      heard_sound_A: footsteps.A !== 0, heard_sound_B: footsteps.B !== 0,
+      heard_background_A: skip ? null : backgrounds.A,
+      heard_background_B: skip ? null : backgrounds.B,
+      ratings_skipped: skip, skip_reason: skip ? 'no_plausible_footsteps' : null,
+      skipped_rating_keys: skip ? questions.map(q => q.key) : bothHaveBackground() ? [] : ['environment'],
+      questionnaire_version: '2026-11-11',
+      audibility_labels: footstepLabels,
+      question_order: ['audibilite_son_A', 'audibilite_son_B', 'ground_type', 'walker_identity',
+        'heard_background_A', 'heard_background_B', 'environment'],
+    });
+    finish(data);
+  };
+  return trial;
 }
 
 function buildPairedSurvey(jsPsych, questions, options = {}) {
@@ -2826,7 +2914,9 @@ class StudyScreenTiming {
     if (event.type === 'keydown' && !slider) return;
     const aliases = { heard:'audibilite_son', 'heard-A':'heard_sound_A', 'heard-B':'heard_sound_B',
       'emotion-marker-a':'Emotion_A', 'emotion-marker-b':'Emotion_B',
-      'volume-reason':'volume_change_reason', 'general-feedback':'general_feedback' };
+      'volume-reason':'volume_change_reason', 'general-feedback':'general_feedback',
+      'footsteps-A':'audibilite_son_A', 'footsteps-B':'audibilite_son_B',
+      'background-A':'heard_background_A', 'background-B':'heard_background_B' };
     const identifier = control.name || control.id || '';
     const buttonQuestion = s.metadata.step === 'attention' ? 'attention_number' : s.metadata.calibration_test === 'volume' ? 'calibration_volume' : 'screen_button';
     const question = control.dataset?.questionKey || aliases[identifier] || identifier || (tag === 'button' ? buttonQuestion : 'control');
