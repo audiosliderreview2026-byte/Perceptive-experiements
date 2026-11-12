@@ -2402,8 +2402,10 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
       throw new Error('This Prolific ID already has a different saved assignment. Use its original userID, or a fresh test prolificID.');
     }
     const fixedTraining = participant.training || trainingManifest[phase];
-    if (!Array.isArray(fixedTraining) || fixedTraining.length !== (phase === 'phase1' ? 4 : 3)) {
-      throw new Error('Training manifest must contain four examples for phase 1 and three for phases 2 and 3.');
+    const trainingCount = phase === 'phase2' ? 3 : 4;
+    const savedPhaseThreePractice = phase === 'phase3' && participant.training?.length === 3;
+    if (!Array.isArray(fixedTraining) || (fixedTraining.length !== trainingCount && !savedPhaseThreePractice)) {
+      throw new Error(`Training manifest must contain ${trainingCount} examples for ${phase}.`);
     }
     const plan = { ...session.trial_order, training: fixedTraining };
     validateAssignedPlan(plan, phase, userID);
@@ -2438,7 +2440,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
         <li>Make sure you are on a computer or laptop (not a smartphone) and in a quiet place.</li>
         <li>Make sure you won't be disturbed for the duration of the experiment (tell the people around you that you should not be disturbed, close all other applications on your device, put you phone away and in "do not disturb" mode, etc.)</li>
         <li>Put this browser window in <strong>full screen</strong>.</li></ul>
-        <p>The study has three stages: <strong>calibration → practice → main study</strong>. It should last about <strong>${phase === 'phase1' ? '1h15' : '1 hour'}</strong>, with a 2-minute pause every ${phase === 'phase1' ? '15–20' : '10–15'} minutes.</p>
+        <p>The study has three stages: <strong>calibration → practice → main study</strong>. It should last about <strong>${phase === 'phase1' ? '1 hour' : '1 hour'}</strong>, with a 2-minute pause every ${phase === 'phase1' ? '15–20' : '10–15'} minutes.</p>
         <p>For this study to yield valid scientific conclusions, we rely on you to carefully follow the instructions, listen attentively to the sounds and answer the questions honestly and thoughtfully. Various technical and attention checks have been included and we reserve the right to reject your submission should you fail too many of these checks.</p><p><strong>Use of AI is prohibited.</strong> We systematically check for AI-assisted/botted submissions and will reject them.</p><p>Thank you for your time and contribution to this study!</p></div>`,
         choices: ['Continue'] });
     }
@@ -2456,7 +2458,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
       <li>Whether Sound A contains sounds that may be footsteps. And same question for sound B.</li>
       <li>Whether it sounded like the person was walking over the same type of ground in both sounds? (for example, concrete vs gravel vs leaves, etc.).</li>
       <li>Whether it sounded like the same person was walking in both sounds (it's fine if they sound angrier or calmer, as long as it could plausibly be the same person walking).</li>
-      <li>Whether there was any background sounds (for example, voices, music and other ambient sounds).</li>
+      <li>Whether there were any background sounds (for example, voices, music and other ambient sounds).</li>
       <li>Whether the background sounds were the same in both sounds.</li>`}
       </ol><p>There is no preferred answer: give your own impression.</p>
       ${phase === 'phase2' ? '<p>A lot, but not all, of the sounds will be footstep sounds. Please tell us how the sounds feel to you, whether or not they contain footsteps.</p>' : ''}

@@ -9,11 +9,19 @@ from persistence import next_available_user_id
 PHASES = ('phase1', 'phase2', 'phase3')
 
 
-def update_assignments(resume_phase1, release_phase2_id1):
+def update_assignments(resume_phase1, release_phase2_id1, phase23_comparison=None):
     with closing(model.get_connection()) as conn, conn:
         conn.execute('BEGIN IMMEDIATE')
         if resume_phase1:
             conn.execute("DELETE FROM phase_assignment_overrides WHERE phase='phase1' AND user_id=37")
+        if phase23_comparison is True:
+            conn.executemany(
+                'INSERT INTO phase_assignment_overrides(phase, user_id) VALUES (?, 1) '
+                'ON CONFLICT(phase) DO UPDATE SET user_id=excluded.user_id',
+                [('phase2',), ('phase3',)],
+            )
+        elif phase23_comparison is False:
+            conn.execute("DELETE FROM phase_assignment_overrides WHERE phase IN ('phase2','phase3') AND user_id=1")
         if release_phase2_id1:
             result = conn.execute("""
                 UPDATE phase_assignments
@@ -64,9 +72,15 @@ if __name__ == '__main__':
     parser.add_argument('--resume-phase1', action='store_true', help='Remove the shared phase 1 USER ID 37 override')
     parser.add_argument('--release-phase2-id1', action='store_true',
                         help='Mark the current phase 2 slot 1 assignment invalid while retaining responses')
+    phase23 = parser.add_mutually_exclusive_group()
+    phase23.add_argument('--compare-phase2-phase3', dest='phase23_comparison', action='store_true',
+                         help='Assign shared USER ID 1 to new phase 2 and phase 3 participants')
+    phase23.add_argument('--resume-phase2-phase3', dest='phase23_comparison', action='store_false',
+                         help='Remove the shared USER ID 1 override from phases 2 and 3')
+    parser.set_defaults(phase23_comparison=None)
     args = parser.parse_args()
     if args.limit < 0:
         parser.error('--limit must be nonnegative')
-    if args.resume_phase1 or args.release_phase2_id1:
-        update_assignments(args.resume_phase1, args.release_phase2_id1)
+    if args.resume_phase1 or args.release_phase2_id1 or args.phase23_comparison is not None:
+        update_assignments(args.resume_phase1, args.release_phase2_id1, args.phase23_comparison)
     print_status(args.limit)

@@ -421,6 +421,38 @@
         "sourceId": "clip_10_10m03s_residual",
         "stimType": "edited"
       }
+    },
+    {
+      "alpha": null,
+      "condition": "concrete",
+      "context": null,
+      "edit_id": null,
+      "h2h_ms": null,
+      "method": "unedited",
+      "pairType": "original_original",
+      "pk_db": null,
+      "pool": "training",
+      "soundA": {
+        "audioPath": "/static/stimulis/training/phase3/04_a_socks_concrete_5s.wav",
+        "durationSeconds": 5,
+        "soundId": "04_a_socks_concrete_5s",
+        "soundType": "training",
+        "sourceId": "socks_concrete_training4",
+        "stimType": "original"
+      },
+      "soundB": {
+        "audioPath": "/static/stimulis/training/phase3/04_b_heels_concrete_5s.wav",
+        "durationSeconds": 5,
+        "soundId": "04_b_heels_concrete_5s",
+        "soundType": "training",
+        "sourceId": "heels_concrete_training4",
+        "stimType": "original"
+      },
+      "soundId": "socks_heels_concrete_training4",
+      "soundType": "training",
+      "training": true,
+      "trialIndex": 3,
+      "trialKey": "phase3:training:3"
     }
   ]
 }
