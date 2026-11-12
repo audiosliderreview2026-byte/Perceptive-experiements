@@ -66,6 +66,25 @@ def migrate():
                 conn.execute('INSERT INTO phase_assignments(prolific_id,phase,user_id) VALUES (?,?,?)', (pid,phase,user))
 
 
+def next_available_user_id(conn, phase):
+    """Preview the assignment for a new Prolific ID without reserving it."""
+    override = conn.execute(
+        'SELECT user_id FROM phase_assignment_overrides WHERE phase=?', (phase,)
+    ).fetchone()
+    if override:
+        return override['user_id']
+    assignments = conn.execute(
+        'SELECT user_id,valid FROM phase_assignments WHERE phase=?', (phase,)
+    ).fetchall()
+    used = {row['user_id'] for row in assignments if row['valid']}
+    if phase == 'phase1' or (phase == 'phase2' and 1 not in used):
+        return next((slot for slot in range(1, 513) if slot not in used), None)
+    reusable = {row['user_id'] for row in assignments if not row['valid']} - used
+    if reusable:
+        return min(reusable)
+    return next((slot for slot in range(1, 513) if slot not in used), None)
+
+
 def assign(prolific_id, phase='phase1'):
     if not isinstance(prolific_id,str) or not prolific_id.strip():
         raise ValueError('A non-empty prolificID is required')
@@ -84,7 +103,6 @@ def assign(prolific_id, phase='phase1'):
                          (prolific_id,phase,user))
         else:
             used={r[0] for r in conn.execute('SELECT user_id FROM phase_assignments WHERE phase=? AND valid=1',(phase,))}
-            invalid={r[0] for r in conn.execute('SELECT user_id FROM phase_assignments WHERE phase=? AND valid=0',(phase,))}
             legacy=conn.execute('SELECT trial_order FROM phase_sessions WHERE prolific_id=? AND phase=?',(prolific_id,phase)).fetchone()
             if legacy:
                 user=legacy_user_id(json.loads(legacy[0]))
@@ -92,8 +110,7 @@ def assign(prolific_id, phase='phase1'):
                     raise ValueError('This legacy session has no recoverable USER ID. Use a new test Prolific ID; its historical results have been retained.')
                 if user in used: raise ValueError('Historical phase assignment is occupied; review before resuming')
             else:
-                user=next(iter(sorted(invalid-used)),None)
-                if user is None: user=next((i for i in range(1,513) if i not in used),None)
+                user=next_available_user_id(conn,phase)
             if user is None: raise ValueError('All 512 USER IDs for this phase are assigned')
             valid=1
             conn.execute('INSERT INTO phase_assignments(prolific_id,phase,user_id,valid) VALUES (?,?,?,1)',(prolific_id,phase,user))
