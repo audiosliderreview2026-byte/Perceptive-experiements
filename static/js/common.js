@@ -2372,13 +2372,10 @@ function buildIntensityPreview() {
   ];
 }
 
-async function runTurchetRetest(jsPsych, buildTrial, accessKey) {
+async function runTurchetRetest(jsPsych, buildTrial) {
   archiveLegacyStudyJobs();
   await flushStudyOutbox();
-  const response = await fetch('/api/turchet-retest', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ access_key: accessKey }),
-  });
+  const response = await fetch('/api/turchet-retest', { method: 'POST' });
   const retest = await readStudyJson(response);
   if (!response.ok) throw new Error(retest.error || 'Could not open the Turchet retest.');
   window.TURCHET_RETEST = true;
@@ -2421,9 +2418,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
     }
     window.PROLIFIC_ID = prolificID;
     if (phase === 'phase2' && window.PROLIFIC_ID === 'turchet-retest') {
-      const key = new URLSearchParams(window.location.hash.slice(1)).get('key');
-      if (!key) throw new Error('Open the Turchet retest link with its access key.');
-      await runTurchetRetest(jsPsych, buildTrial, key);
+      await runTurchetRetest(jsPsych, buildTrial);
       return;
     }
     if (phase === 'phase2' && window.PROLIFIC_ID === 'intensity') {

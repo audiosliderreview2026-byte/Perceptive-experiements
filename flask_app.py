@@ -3,7 +3,6 @@ from pathlib import Path
 import model
 import json
 import gzip
-import secrets
 import hashlib
 import mmap
 import re
@@ -361,13 +360,6 @@ def load_assigned_plan(phase,user_id):
 
 @app.post('/api/turchet-retest')
 def turchet_retest():
-    key_file = Path(app.root_path) / '.turchet-retest-key'
-    data = request.get_json(silent=True)
-    supplied = data.get('access_key') if isinstance(data, dict) else None
-    if not key_file.is_file() or not isinstance(supplied, str) or not supplied or not secrets.compare_digest(
-        supplied.encode(), key_file.read_bytes().strip()
-    ):
-        return jsonify(error='A valid Turchet retest access key is required.'), 403
     try:
         return jsonify(study_control.register_turchet_retest(load_assigned_plan('phase2', '1')))
     except ValueError as exc:
