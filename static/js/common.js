@@ -912,6 +912,7 @@ function experimentalTrialKey(
   trialIndex
 ) {
 
+  if (section === 'consistency') return 'consistency|final|ratings';
   return [
     section,
     String(trialIndex),
@@ -1685,10 +1686,7 @@ function buildSliderSurveyTrial(
       };
 
 
-      const section =
-        isTraining
-          ? 'training'
-          : 'test';
+      const section = trialData.repeatOfTrialKey ? 'consistency' : isTraining ? 'training' : 'test';
 
 
       const trialKey =
@@ -2177,10 +2175,7 @@ function buildRelativeEmotionTrial(
       };
 
 
-      const section =
-        isTraining
-          ? 'training'
-          : 'test';
+      const section = trialData.repeatOfTrialKey ? 'consistency' : isTraining ? 'training' : 'test';
 
 
       const trialKey =
@@ -2518,7 +2513,11 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
         timeline.push(buildAttentionCheck(check, phase));
       }
     }
-    if (!completed.has('feedback|final')) timeline.push({ timeline: [buildStudyPermission('feedback|final'), buildFinalFeedback(phase)] });
+    if (!completed.has('feedback|final')) {
+      const repeatKey = experimentalTrialKey('consistency');
+      if (!completed.has(repeatKey)) timeline.push(...buildConsistencyTrial(buildTrial, questions, plan.test[0]));
+      timeline.push({ timeline: [buildStudyPermission('feedback|final'), buildFinalFeedback(phase)] });
+    }
     console.info(`[${phase}] USER ID ${userID}: ${plan.test.length} assigned, ${remaining.length} remaining.`);
     await jsPsych.run(instrumentStudyTimeline(timeline));
   } catch (error) {
@@ -2863,7 +2862,7 @@ function archiveLegacyStudyJobs() {
 }
 const studyTrialTickets = {};
 const studyAttentionContexts = {};
-function buildStudyPermission(trialKey) {
+function buildStudyPermission(trialKey, onReady = () => {}) {
   return {
     type: jsPsychHtmlButtonResponse,
     stimulus: '<div class="screen"><p id="permission-status" role="status">Preparing the next screen…</p><button id="permission-retry" type="button" class="jspsych-btn" hidden>Try again</button></div>',
@@ -2883,7 +2882,8 @@ function buildStudyPermission(trialKey) {
           });
           const result = await response.json();
           if (!response.ok) throw new Error(result.error || 'Could not prepare the next trial.');
-          studyTrialTickets[trialKey] = result.ticket;
+          onReady(result);
+          if (result.ticket) studyTrialTickets[trialKey] = result.ticket;
           if (result.attention) studyAttentionContexts[trialKey] = result.attention;
           jsPsych.finishTrial({ trial_key: trialKey });
         } catch (error) {
@@ -2895,6 +2895,22 @@ function buildStudyPermission(trialKey) {
       prepare();
     },
   };
+}
+
+function buildConsistencyTrial(buildTrial, questions, templateStimulus) {
+  let selectedTrials = [];
+  const permission = buildStudyPermission(experimentalTrialKey('consistency'), result => {
+    selectedTrials = result.skipped ? [] : buildTrial(result.stimulus, questions, false);
+  });
+  // The timeline shape is known before the server selects the actual recording.
+  const timeline = buildTrial(templateStimulus, questions, false).map((template, index) => ({
+    ...template,
+    stimulus: () => selectedTrials[index].stimulus,
+    data: () => selectedTrials[index].data,
+    on_load(...args) { return selectedTrials[index].on_load?.apply(this, args); },
+    on_finish(data) { return selectedTrials[index].on_finish?.call(this, data); },
+  }));
+  return [permission, { timeline, conditional_function: () => selectedTrials.length > 0 }];
 }
 
 function buildBreakScreen() {
@@ -2911,7 +2927,8 @@ class StudyScreenTiming {
     const now = performance.now();
     this.state = { id: crypto.randomUUID(), start: now, startedAt: new Date().toISOString(),
       metadata: { step: metadata.step || 'instruction', trialIndex: metadata.trialIndex,
-        soundId: metadata.soundId, calibration_test: metadata.calibration_test, training: !!metadata.training },
+        soundId: metadata.soundId, repeatOfTrialKey: metadata.repeatOfTrialKey,
+        calibration_test: metadata.calibration_test, training: !!metadata.training },
       label: document.querySelector('#jspsych-content h2, #jspsych-content h3, #jspsych-content legend')?.textContent?.trim().slice(0, 200) || '',
       hiddenStart: document.hidden ? now : null, hiddenMs: 0, visibilityChanges: 0,
       first: null, last: null, questions: {}, interactions: [], omitted: 0 };
@@ -2999,7 +3016,8 @@ function instrumentStudyTimeline(timeline) {
     if (trial.timeline) { instrumentStudyTimeline(trial.timeline); continue; }
     const load = trial.on_load, finish = trial.on_finish;
     trial.on_load = function(...args) {
-      studyScreenTiming.start(typeof trial.data === 'object' ? trial.data : {});
+      const metadata = typeof trial.data === 'function' ? trial.data() : trial.data;
+      studyScreenTiming.start(metadata || {});
       return load?.apply(this, args);
     };
     trial.on_finish = function(data) {
