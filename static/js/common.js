@@ -2341,20 +2341,25 @@ function buildIntensityPreview() {
     ? audio[index]
     : `/static/stimulis/calibration/turchet_preview_pk_matched_${pk}.wav`
   );
+  const expandedAudio = levels.map((pk, index) => index === levels.length - 1
+    ? audio[index]
+    : `/static/stimulis/calibration/turchet_preview_pk_expanded_${pk}.wav`
+  );
   const sweeps = [
     { label: 'Current WAV levels', paths: audio },
     { label: 'PK-matched WAV levels', paths: matchedAudio },
+    { label: 'Expanded PK spacing (1.2×)', paths: expandedAudio },
   ];
   return [
-    { type: jsPsychPreload, audio: [...new Set([...audio, ...matchedAudio])] },
+    { type: jsPsychPreload, audio: [...new Set([...audio, ...matchedAudio, ...expandedAudio])] },
     {
       type: jsPsychHtmlButtonResponse,
-      stimulus: '<div class="screen"><h2>Turchet intensity preview</h2><p>Listen to two sets of four clips in ascending PK order. Both sets end with the same clip. Keep your device volume fixed throughout.</p></div>',
+      stimulus: '<div class="screen"><h2>Turchet intensity preview</h2><p>Listen to three sets of four clips in ascending PK order. All three sets end with the same clip. Keep your device volume fixed throughout.</p></div>',
       choices: ['Start listening'],
     },
     ...sweeps.flatMap(({ label, paths }, sweep) => paths.map((audioPath, index) => buildListenTrial({
       audioPath,
-      choices: [index < paths.length - 1 ? 'Next sound' : sweep === 0 ? 'Start PK-matched set' : 'Finish preview'],
+      choices: [index < paths.length - 1 ? 'Next sound' : sweep < sweeps.length - 1 ? 'Start next set' : 'Finish preview'],
       prompt: `<div class="screen"><h2>${label}</h2><p>Sound ${index + 1} / ${paths.length} · PK ${levels[index]} dB</p></div>`,
       data: { step: 'intensity_preview' },
     }))),
