@@ -2399,7 +2399,7 @@ function buildEditIntensityPreview(pairs) {
         listen(pair.matched, 'RMS-matched comparison', 'Edit', 'Show measured difference'),
         {
           type: jsPsychHtmlButtonResponse,
-          stimulus: `<div class="screen"><h2>Example ${index + 1} · ${pair.category}</h2><p>At the stored WAV levels, the edit was ${pair.rms.toFixed(1)} dB higher in whole-clip RMS and ${pair.peak.toFixed(1)} dB higher in median matched footstep peak level.</p></div>`,
+          stimulus: `<div class="screen"><h2>Example ${index + 1} · ${pair.category}</h2><p>Edit alpha = ${pair.alpha}</p><p><strong>Before matching</strong>, the edit was ${pair.rms.toFixed(1)} dB higher in whole-clip RMS and ${pair.peak.toFixed(1)} dB higher in median matched footstep peak level.</p><p><strong>For the RMS-matched comparison</strong>, the edit was turned down by ${pair.rms.toFixed(1)} dB to match the original’s whole-clip RMS.</p></div>`,
           choices: [index === pairs.length - 1 ? 'Finish preview' : 'Next example'],
         },
       ];
@@ -2458,7 +2458,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
     }
     if (phase === 'phase2' && window.PROLIFIC_ID === 'edit-intensity') {
       window.STUDY_COMPLETION_PREVIEW = true;
-      const pairs = await fetchExperimentJson('/static/stimulis/calibration/edit_intensity_preview.json');
+      const pairs = await fetchExperimentJson('/static/stimulis/calibration/edit_intensity_preview.json?v=2');
       await jsPsych.run(buildEditIntensityPreview(pairs));
       return;
     }

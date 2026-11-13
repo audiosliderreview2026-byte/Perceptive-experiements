@@ -5,7 +5,8 @@
     "edit": "/static/stimulis/segments_5s/test_yt_edits/clip_06_1m50s_residual__edit_03__alpha_m7p772356__first_0-5s.wav",
     "matched": "/static/stimulis/calibration/edit_intensity_rms_matched_01.wav",
     "peak": 12.07,
-    "rms": 12.05
+    "rms": 12.05,
+    "alpha": -7.772356
   },
   {
     "category": "Separated YouTube",
@@ -13,7 +14,8 @@
     "edit": "/static/stimulis/segments_5s/test_yt_edits/free_hike_02_target__edit_13__alpha_m0p349428__second_5-10s.wav",
     "matched": "/static/stimulis/calibration/edit_intensity_rms_matched_02.wav",
     "peak": 18.65,
-    "rms": 17.75
+    "rms": 17.75,
+    "alpha": -0.349428
   },
   {
     "category": "Plugin",
@@ -21,7 +23,8 @@
     "edit": "/static/stimulis/segments_5s/test_plugin_edits/sneakers_wood_neutral_0008__edit_18__alpha_p5p304296__second_5-10s.wav",
     "matched": "/static/stimulis/calibration/edit_intensity_rms_matched_03.wav",
     "peak": 3.16,
-    "rms": 3.14
+    "rms": 3.14,
+    "alpha": 5.304296
   },
   {
     "category": "Plugin",
@@ -29,6 +32,7 @@
     "edit": "/static/stimulis/segments_5s/test_plugin_edits/leaves_2_chunk_048__edit_23__alpha_p2p560602__second_5-10s.wav",
     "matched": "/static/stimulis/calibration/edit_intensity_rms_matched_04.wav",
     "peak": 6.99,
-    "rms": 6.9
+    "rms": 6.9,
+    "alpha": 2.560602
   }
 ]
