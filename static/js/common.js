@@ -1313,7 +1313,7 @@ function makeJsPsych(
       async on_finish() {
         if (window.STUDY_COMPLETION_PREVIEW) {
           finished = true;
-          if (window.EXPERIMENT_PHASE === 'phase2' && window.PROLIFIC_ID === 'intensity') {
+          if (window.EXPERIMENT_PHASE === 'phase2' && ['intensity', 'edit-intensity'].includes(window.PROLIFIC_ID)) {
             jsPsych.getDisplayElement().innerHTML = '<div class="screen"><h2>Intensity preview complete</h2><p>Refresh this page to listen again.</p></div>';
           } else {
             renderStudyCompletion(jsPsych.getDisplayElement());
@@ -2378,6 +2378,35 @@ function buildIntensityPreview() {
   ];
 }
 
+function buildEditIntensityPreview(pairs) {
+  const audio = [...new Set(pairs.flatMap(pair => [pair.original, pair.edit, pair.matched]))];
+  return [
+    { type: jsPsychPreload, audio },
+    {
+      type: jsPsychHtmlButtonResponse,
+      stimulus: '<div class="screen"><h2>Edit intensity preview</h2><p>For each example, compare the original with the edit at its stored level, then hear the same pair with the edit matched to the original’s average digital level. Keep your device volume fixed and listen for changes in the footsteps.</p></div>',
+      choices: ['Start listening'],
+    },
+    ...pairs.flatMap((pair, index) => {
+      const prompt = (label, sound) => `<div class="screen"><h2>Example ${index + 1} / ${pairs.length} · ${pair.category}</h2><p>${label} · ${sound}</p></div>`;
+      const listen = (audioPath, label, sound, next) => buildListenTrial({
+        audioPath, choices: [next], prompt: prompt(label, sound), data: { step: 'edit_intensity_preview' },
+      });
+      return [
+        listen(pair.original, 'Stored WAV levels', 'Original', 'Play edit'),
+        listen(pair.edit, 'Stored WAV levels', 'Edit', 'Compare at matched levels'),
+        listen(pair.original, 'RMS-matched comparison', 'Original', 'Play matched edit'),
+        listen(pair.matched, 'RMS-matched comparison', 'Edit', 'Show measured difference'),
+        {
+          type: jsPsychHtmlButtonResponse,
+          stimulus: `<div class="screen"><h2>Example ${index + 1} · ${pair.category}</h2><p>At the stored WAV levels, the edit was ${pair.rms.toFixed(1)} dB higher in whole-clip RMS and ${pair.peak.toFixed(1)} dB higher in median matched footstep peak level.</p></div>`,
+          choices: [index === pairs.length - 1 ? 'Finish preview' : 'Next example'],
+        },
+      ];
+    }),
+  ];
+}
+
 async function runTurchetRetest(jsPsych, buildTrial) {
   archiveLegacyStudyJobs();
   await flushStudyOutbox();
@@ -2425,6 +2454,12 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
     window.PROLIFIC_ID = prolificID;
     if (phase === 'phase2' && window.PROLIFIC_ID === 'turchet-retest') {
       await runTurchetRetest(jsPsych, buildTrial);
+      return;
+    }
+    if (phase === 'phase2' && window.PROLIFIC_ID === 'edit-intensity') {
+      window.STUDY_COMPLETION_PREVIEW = true;
+      const pairs = await fetchExperimentJson('/static/stimulis/calibration/edit_intensity_preview.json');
+      await jsPsych.run(buildEditIntensityPreview(pairs));
       return;
     }
     if (phase === 'phase2' && window.PROLIFIC_ID === 'intensity') {
