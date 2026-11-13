@@ -1005,7 +1005,7 @@ function confirmMainTrial(job) {
   const response = JSON.parse(job.options.body);
   const key = response.trial_key;
   if (response.prolificID !== window.PROLIFIC_ID || response.phase !== window.EXPERIMENT_PHASE ||
-      response.section !== 'test' || !assignedMainTrialKeys.has(key) ||
+      !['test', 'turchet_retest'].includes(response.section) || !assignedMainTrialKeys.has(key) ||
       confirmedMainTrialKeys.has(key)) return;
 
   confirmedMainTrialKeys.add(key);
@@ -1322,6 +1322,10 @@ function makeJsPsych(
         }
         await waitForStudySaves();
         finished = true;
+        if (window.TURCHET_RETEST) {
+          jsPsych.getDisplayElement().innerHTML = '<div class="screen"><h2>Turchet retest complete</h2><p>Your responses have been saved.</p></div>';
+          return;
+        }
 
         // Keep the local CSV download as a temporary
         // development safety net.
@@ -2175,7 +2179,7 @@ function buildRelativeEmotionTrial(
       };
 
 
-      const section = trialData.repeatOfTrialKey ? 'consistency' : isTraining ? 'training' : 'test';
+      const section = window.TURCHET_RETEST ? 'turchet_retest' : (trialData.repeatOfTrialKey ? 'consistency' : isTraining ? 'training' : 'test');
 
 
       const trialKey =
@@ -2345,16 +2349,18 @@ function buildIntensityPreview() {
     ? audio[index]
     : `/static/stimulis/calibration/turchet_preview_pk_2x_${pk}.wav`
   );
+  const productionAudio = audio.map(path => path.replace('/Turchet_baseline/', '/Turchet_baseline_pk1p2_v1/'));
   const sweeps = [
-    { label: 'Current WAV levels', paths: audio },
+    { label: 'Original WAV levels', paths: audio },
     { label: 'PK-matched WAV levels', paths: matchedAudio },
+    { label: 'Production PK spacing (1.2×)', paths: productionAudio },
     { label: 'Expanded PK spacing (2×)', paths: expandedAudio },
   ];
   return [
-    { type: jsPsychPreload, audio: [...new Set([...audio, ...matchedAudio, ...expandedAudio])] },
+    { type: jsPsychPreload, audio: [...new Set(sweeps.flatMap(sweep => sweep.paths))] },
     {
       type: jsPsychHtmlButtonResponse,
-      stimulus: '<div class="screen"><h2>Turchet intensity preview</h2><p>Listen to three sets of four clips in ascending PK order. All three sets end with the same clip. Keep your device volume fixed throughout.</p></div>',
+      stimulus: '<div class="screen"><h2>Turchet intensity preview</h2><p>Listen to four sets of four clips in ascending PK order. Every set ends with the same clip. Keep your device volume fixed throughout.</p></div>',
       choices: ['Start listening'],
     },
     ...sweeps.flatMap(({ label, paths }, sweep) => paths.map((audioPath, index) => buildListenTrial({
@@ -2366,6 +2372,45 @@ function buildIntensityPreview() {
   ];
 }
 
+async function runTurchetRetest(jsPsych, buildTrial, accessKey) {
+  archiveLegacyStudyJobs();
+  await flushStudyOutbox();
+  const response = await fetch('/api/turchet-retest', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ access_key: accessKey }),
+  });
+  const retest = await readStudyJson(response);
+  if (!response.ok) throw new Error(retest.error || 'Could not open the Turchet retest.');
+  window.TURCHET_RETEST = true;
+  window.PROLIFIC_ID = retest.prolificID;
+  window.ASSIGNED_USER_ID = retest.userID;
+  window.STUDY_SESSION_TOKEN = retest.session_token;
+
+  const audio = retest.remaining.flatMap(trial => [trial.soundA.audioPath, trial.soundB.audioPath]);
+  const timeline = [];
+  if (audio.length) timeline.push({ type: jsPsychPreload, audio: [...new Set(audio)] });
+  timeline.push({
+    type: jsPsychHtmlButtonResponse,
+    stimulus: `<div class="screen"><h2>Phase 2 Turchet retest</h2><p>${retest.total - retest.remaining.length} / ${retest.total} pairs completed. Keep your current listening volume fixed.</p></div>`,
+    choices: [audio.length ? 'Start listening' : 'Finish'],
+  });
+  confirmedMainTrialKeys = new Set(retest.completed);
+  assignedMainTrialKeys = new Set([
+    ...confirmedMainTrialKeys,
+    ...retest.remaining.map(trial => experimentalTrialKey('turchet_retest', trial.trialIndex)),
+  ]);
+  setExperimentProgress(confirmedMainTrialKeys.size, retest.total);
+  for (const trial of retest.remaining) {
+    timeline.push({
+      timeline: [
+        buildStudyPermission(experimentalTrialKey('turchet_retest', trial.trialIndex)),
+        ...buildTrial(trial, retest.questions, false),
+      ],
+    });
+  }
+  await jsPsych.run(instrumentStudyTimeline(timeline));
+}
+
 async function runAssignedExperiment(jsPsych, phase, buildTrial) {
   try {
     const params = new URLSearchParams(window.location.search);
@@ -2375,6 +2420,12 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
       throw new Error(`The URL is missing a Prolific ID. Open the full study link (for example, /${phase}?prolificID=YOUR_ID).`);
     }
     window.PROLIFIC_ID = prolificID;
+    if (phase === 'phase2' && window.PROLIFIC_ID === 'turchet-retest') {
+      const key = new URLSearchParams(window.location.hash.slice(1)).get('key');
+      if (!key) throw new Error('Open the Turchet retest link with its access key.');
+      await runTurchetRetest(jsPsych, buildTrial, key);
+      return;
+    }
     if (phase === 'phase2' && window.PROLIFIC_ID === 'intensity') {
       window.STUDY_COMPLETION_PREVIEW = true;
       await jsPsych.run(buildIntensityPreview());
@@ -2420,7 +2471,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
     window.EXPERIMENT_PHASE = phase;
 
     const [assigned, phaseQuestions, trainingManifest, phaseOneQuestions] = await Promise.all([
-      fetchExperimentJson(`/api/trial-order?phase=${phase}&userID=${userID}`),
+      participant.trial_order,
       fetchExperimentJson(`/static/js/questions_${phase}.json`),
       fetchExperimentJson('/static/stimulis/training/manifest.json'),
       phase === 'phase3' ? fetchExperimentJson('/static/js/questions_phase1.json') : null,

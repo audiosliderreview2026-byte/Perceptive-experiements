@@ -12,3 +12,8 @@ research_results*.jsonl
 
 # Spoken-digit answer mapping is uploaded privately to the server.
 private_assets/attention/manifest.json
+
+# Generated Turchet WAVs
+static/stimulis/segments_5s/Turchet_baseline_pk1p2_v1/
+
+.turchet-retest-key

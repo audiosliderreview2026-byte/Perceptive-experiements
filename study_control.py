@@ -12,6 +12,7 @@ from pathlib import Path
 
 import model
 import persistence
+import turchet_levels
 
 ROOT = Path(__file__).resolve().parent
 CALIBRATION_AUDIO = json.loads((ROOT / 'static/stimulis/calibration/sources.json').read_text())['calibration_order']
@@ -32,6 +33,9 @@ def migrate():
             prolific_id TEXT NOT NULL, phase TEXT NOT NULL, token TEXT NOT NULL,
             units TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY(prolific_id,phase))''')
+        columns = {row[1] for row in conn.execute('PRAGMA table_info(study_controls)')}
+        if 'turchet_retest_token' not in columns:
+            conn.execute('ALTER TABLE study_controls ADD COLUMN turchet_retest_token TEXT')
         conn.execute('''CREATE TABLE IF NOT EXISTS trial_permissions (
             prolific_id TEXT NOT NULL, phase TEXT NOT NULL, trial_key TEXT NOT NULL,
             ticket TEXT NOT NULL, issued_at REAL NOT NULL, accepted_at REAL,
@@ -141,7 +145,7 @@ def make_units(plan):
         units.append({'key':f"{section}|{trial['trialIndex']}|ratings",'section':section,
                       'index':trial['trialIndex'],'minimum':sum(duration(p) for p in paths),
                       'stimulus':trial,'questions':questions})
-    for trial in manifest[phase]: rating(trial,'training')
+    for trial in turchet_levels.versioned_stimulus(manifest[phase]): rating(trial,'training')
     checks=attention_schedule(phase,plan['userID'],len(plan['test'])); emitted=set()
     for trial in plan['test']:
         for check in checks:
@@ -154,12 +158,12 @@ def make_units(plan):
     return units
 
 
-def register(pid, phase, plan):
+def register(pid, phase, plan, *, saved_plan=False):
     # Snapshot order and practice assets once; registering again cannot reset timers.
     with model.get_connection() as conn:
         row=conn.execute('SELECT token FROM study_controls WHERE prolific_id=? AND phase=?',(pid,phase)).fetchone()
     if not row:
-        units=make_units(plan)
+        units=make_units(plan if saved_plan else turchet_levels.versioned_stimulus(plan))
         with model.get_connection() as conn:
             conn.execute('INSERT OR IGNORE INTO study_controls(prolific_id,phase,token,units) VALUES (?,?,?,?)',
                          (pid,phase,secrets.token_urlsafe(32),json.dumps(units)))
@@ -173,15 +177,72 @@ def fixed_stimuli(pid, phase):
     units = json.loads(row['units'])
     calibration = next(unit['audio_paths'] for unit in units if unit['key'] == 'calibration|volume')
     training = [unit['stimulus'] for unit in units if unit['section'] == 'training']
-    return calibration, training
+    test = [unit['stimulus'] for unit in units if unit['section'] == 'test']
+    return calibration, training, test
+
+
+TURCHET_RETEST = 'turchet_retest'
+TURCHET_RETEST_PID = 'etienne'
+
+
+def register_turchet_retest(plan):
+    pid, phase = TURCHET_RETEST_PID, 'phase2'
+    questions = json.loads((ROOT / 'static/js/questions_phase2.json').read_text())
+    trials = turchet_levels.versioned_stimulus([trial for trial in plan['test'] if trial.get('pool') == 'turchet'])
+    if not trials or any(
+        not any(sound.get('turchet_level_version') == turchet_levels.VERSION
+                for sound in (trial['soundA'], trial['soundB'])) for trial in trials
+    ):
+        raise ValueError('Missing versioned Turchet trials in the USER ID 1 order.')
+    with model.get_connection() as conn:
+        conn.execute('BEGIN IMMEDIATE')
+        conn.execute('INSERT OR IGNORE INTO participants(prolific_id) VALUES (?)', (pid,))
+        conn.execute('INSERT OR IGNORE INTO phase_assignments(prolific_id,phase,user_id,shared_slot) VALUES (?,?,1,1)', (pid, phase))
+        control = conn.execute('SELECT * FROM study_controls WHERE prolific_id=? AND phase=?', (pid, phase)).fetchone()
+        if control:
+            units = json.loads(control['units'])
+            token = control['turchet_retest_token']
+        else:
+            session = conn.execute('SELECT trial_order FROM phase_sessions WHERE prolific_id=? AND phase=?', (pid, phase)).fetchone()
+            normal_plan = json.loads(session[0]) if session else turchet_levels.versioned_stimulus(plan)
+            units = make_units(normal_plan)
+            token = None
+            conn.execute('INSERT INTO study_controls(prolific_id,phase,token,units) VALUES (?,?,?,?)',
+                         (pid, phase, secrets.token_urlsafe(32), json.dumps(units)))
+        if not token:
+            for trial in trials:
+                index = trial['trialIndex']
+                units.append({
+                    'key': f'{TURCHET_RETEST}|{index}|ratings', 'section': TURCHET_RETEST,
+                    'index': index, 'stimulus': trial, 'questions': questions,
+                    'minimum': sum(duration(trial[side]['audioPath']) for side in ('soundA', 'soundB')),
+                })
+            token = secrets.token_urlsafe(32)
+            conn.execute('UPDATE study_controls SET units=?,turchet_retest_token=? WHERE prolific_id=? AND phase=?',
+                         (json.dumps(units), token, pid, phase))
+        completed = {row[0] for row in conn.execute(
+            'SELECT trial_key FROM trial_data WHERE prolific_id=? AND phase=? AND section=?', (pid, phase, TURCHET_RETEST))}
+    retest = [unit for unit in units if unit['section'] == TURCHET_RETEST]
+    return {'prolificID': pid, 'userID': '1', 'session_token': token, 'questions': retest[0]['questions'],
+            'total': len(retest), 'completed': sorted(completed), 'remaining': [unit['stimulus'] for unit in retest if unit['key'] not in completed]}
 
 
 def authenticate(conn, pid, phase, token):
     row=conn.execute('SELECT * FROM study_controls WHERE prolific_id=? AND phase=?',(pid,phase)).fetchone()
-    if not row or not isinstance(token,str) or not secrets.compare_digest(row['token'], token):
-        # Unauthenticated requests must never be able to invalidate another participant.
+    if not row or not isinstance(token,str) or not any(
+        secret and secrets.compare_digest(secret, token) for secret in (row['token'], row['turchet_retest_token'])
+    ):
         raise ControlError('Reload the study page to obtain its session permission.', 'session_required', 403)
     return row
+
+
+def is_turchet_retest(control, token):
+    return control['turchet_retest_token'] == token
+
+
+def session_units(control, token):
+    retest = is_turchet_retest(control, token)
+    return [unit for unit in json.loads(control['units']) if (unit['section'] == TURCHET_RETEST) == retest]
 
 
 def next_unit(conn,pid,phase,units):
@@ -237,7 +298,7 @@ def begin(data):
     with model.get_connection() as conn:
         conn.execute('BEGIN IMMEDIATE')
         control=authenticate(conn,pid,phase,data.get('session_token'))
-        units = json.loads(control['units'])
+        units = session_units(control, data.get('session_token'))
         unit = next_unit(conn, pid, phase, units)
         if key == CONSISTENCY_KEY and unit and unit['key'] == 'feedback|final':
             if any(saved['key'] == CONSISTENCY_KEY for saved in units):
@@ -247,7 +308,8 @@ def begin(data):
                 return {'ok': True, 'skipped': True}
             units.insert(units.index(unit), repeat)
             conn.execute('UPDATE study_controls SET units=? WHERE prolific_id=? AND phase=?',
-                         (json.dumps(units), pid, phase))
+                         (json.dumps(units + [saved for saved in json.loads(control['units'])
+                                              if saved['section'] == TURCHET_RETEST]), pid, phase))
             unit = repeat
         if not unit or key!=unit['key']:
             # A refresh or second tab can request a completed unit; do not auto-invalidate it.
@@ -277,7 +339,7 @@ def validate_payload(data,unit,phase):
         if key in expected and p.get(key)!=expected[key]:
             raise ControlError('Sound metadata does not match the assigned trial.','stimulus_mismatch',422)
     section=unit['section']
-    if section in ('training','test','consistency'):
+    if section in ('training','test','consistency',TURCHET_RETEST):
         keys=[q['key'] for q in unit['questions'] if q['key']!='audibilite_son']
         if phase == 'phase3' and (p.get('questionnaire_version') == '2026-11-11' or 'shoe_type' not in keys):
             # Existing sessions can have the previous four questions frozen in their units.
@@ -346,8 +408,12 @@ def submit(data):
     with model.get_connection() as conn:
         conn.execute('BEGIN IMMEDIATE')
         control=authenticate(conn,pid,phase,data.get('session_token'))
-        units=json.loads(control['units']);unit=next((u for u in units if u['key']==key),None)
-        assignment=conn.execute('SELECT user_id FROM phase_assignments WHERE prolific_id=? AND phase=?',(pid,phase)).fetchone()
+        token = data.get('session_token')
+        retest = is_turchet_retest(control, token)
+        units = session_units(control, token)
+        unit = next((unit for unit in units if unit['key'] == key), None)
+        assignment = (1,) if retest else conn.execute(
+            'SELECT user_id FROM phase_assignments WHERE prolific_id=? AND phase=?',(pid,phase)).fetchone()
         # Early/missing ticket checks are evaluated before trusting any client-supplied values.
         grant=conn.execute('SELECT * FROM trial_permissions WHERE prolific_id=? AND phase=? AND trial_key=?',(pid,phase,key)).fetchone()
         completed=conn.execute('SELECT 1 FROM trial_data WHERE prolific_id=? AND phase=? AND trial_key=?',(pid,phase,key)).fetchone()
@@ -383,7 +449,7 @@ def submit(data):
         except ControlError as exc:
             failure=exc
             # Small timing discrepancies are retriable and cannot invalidate a person.
-            severity='review' if exc.code=='too_early' and (exc.retry_after or 0)<=1 else 'protocol'
+            severity='review' if retest or (exc.code=='too_early' and (exc.retry_after or 0)<=1) else 'protocol'
             flag(conn,pid,phase,exc.code,str(key),request_id,{'message':str(exc),'remaining_seconds':exc.retry_after},severity)
     if failure:raise failure
     return result

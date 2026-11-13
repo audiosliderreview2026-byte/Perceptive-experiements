@@ -3,6 +3,7 @@ from pathlib import Path
 import model
 import json
 import gzip
+import secrets
 import hashlib
 import mmap
 import re
@@ -48,8 +49,10 @@ def protect_study_endpoints():
     if not isinstance(data.get('prolificID'),str) or data.get('phase') not in ('phase1','phase2','phase3'):
         raise study_control.ControlError('Participant and phase are required.','invalid_request',400)
     with model.get_connection() as conn:
-        study_control.authenticate(conn, data.get('prolificID'), data.get('phase'),
-                                   request.headers.get('X-Study-Token') or data.get('session_token'))
+        token = request.headers.get('X-Study-Token') or data.get('session_token')
+        control = study_control.authenticate(conn, data.get('prolificID'), data.get('phase'), token)
+        if study_control.is_turchet_retest(control, token) and request.path not in ('/api/trial/begin', '/api/save-trial'):
+            raise study_control.ControlError('Use the Turchet retest entry point.', 'invalid_request', 403)
 
 @app.post('/api/attention/preview')
 def attention_preview():
@@ -224,6 +227,7 @@ def create_session():
 
     participant = persistence.assign(prolific_id, phase)
     expected_plan = load_assigned_plan(phase, participant['userID'])
+    _, _, expected_plan['test'] = study_control.fixed_stimuli(prolific_id, phase)
     if trial_order != expected_plan:
         return jsonify(error='Plan does not match database USER ID'), 409
     session = model.create_phase_session(
@@ -355,15 +359,34 @@ def load_assigned_plan(phase,user_id):
     return plan
 
 
+@app.post('/api/turchet-retest')
+def turchet_retest():
+    key_file = Path(app.root_path) / '.turchet-retest-key'
+    data = request.get_json(silent=True)
+    supplied = data.get('access_key') if isinstance(data, dict) else None
+    if not key_file.is_file() or not isinstance(supplied, str) or not supplied or not secrets.compare_digest(
+        supplied.encode(), key_file.read_bytes().strip()
+    ):
+        return jsonify(error='A valid Turchet retest access key is required.'), 403
+    try:
+        return jsonify(study_control.register_turchet_retest(load_assigned_plan('phase2', '1')))
+    except ValueError as exc:
+        return jsonify(error=str(exc)), 409
+
+
 @app.post('/api/participant')
 def register_participant():
     try:
         data=request.get_json() or {}
         participant=persistence.assign(data.get('prolificID'),data.get('phase'))
         plan=load_assigned_plan(participant['phase'],participant['userID'])
-        participant['session_token']=study_control.register(participant['prolificID'],participant['phase'],plan)
-        participant['calibration_audio'], participant['training'] = study_control.fixed_stimuli(
+        session = model.get_phase_session(participant['prolificID'], participant['phase'])
+        participant['session_token'] = study_control.register(
+            participant['prolificID'], participant['phase'], session['trial_order'] if session else plan,
+            saved_plan=session is not None)
+        participant['calibration_audio'], participant['training'], plan['test'] = study_control.fixed_stimuli(
             participant['prolificID'], participant['phase'])
+        participant['trial_order'] = plan
         participant['control_version']=1
         return jsonify(participant)
     except ValueError as exc:
