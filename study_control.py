@@ -191,6 +191,37 @@ def next_unit(conn,pid,phase,units):
     return next((unit for unit in units if unit['key'] not in completed),None)
 
 
+CONSISTENCY_KEY = 'consistency|final|ratings'
+
+
+def select_consistency_unit(conn, pid, phase, units):
+    saved = {
+        row['trial_key']: json.loads(row['payload'])
+        for row in conn.execute(
+            "SELECT trial_key,payload FROM trial_data WHERE prolific_id=? AND phase=? AND section='test'",
+            (pid, phase),
+        )
+    }
+
+    def eligible(payload):
+        if payload.get('ratings_skipped') is True:
+            return False
+        if phase == 'phase1':
+            return payload.get('audibilite_son') == 2
+        if phase == 'phase2':
+            return all(payload.get(f'heard_sound_{role}') is True for role in 'AB')
+        return all(payload.get(f'audibilite_son_{role}') == 2 for role in 'AB')
+
+    candidates = [unit for unit in units if unit['section'] == 'test'
+                  and unit['key'] in saved and eligible(saved[unit['key']])]
+    if not candidates:
+        return None
+    original = secrets.choice(candidates)
+    stimulus = {**original['stimulus'], 'repeatOfTrialIndex': original['index'],
+                'repeatOfTrialKey': original['key']}
+    return {**original, 'key': CONSISTENCY_KEY, 'section': 'consistency', 'stimulus': stimulus}
+
+
 def flag(conn,pid,phase,code,key,request_id,detail,severity='protocol'):
     inserted=conn.execute('INSERT OR IGNORE INTO integrity_flags(prolific_id,phase,code,trial_key,request_id,detail,severity) VALUES (?,?,?,?,?,?,?)',
                  (pid,phase,code,key,str(request_id),json.dumps(detail),severity)).rowcount
@@ -208,7 +239,18 @@ def begin(data):
     with model.get_connection() as conn:
         conn.execute('BEGIN IMMEDIATE')
         control=authenticate(conn,pid,phase,data.get('session_token'))
-        unit=next_unit(conn,pid,phase,json.loads(control['units']))
+        units = json.loads(control['units'])
+        unit = next_unit(conn, pid, phase, units)
+        if key == CONSISTENCY_KEY and unit and unit['key'] == 'feedback|final':
+            if any(saved['key'] == CONSISTENCY_KEY for saved in units):
+                return {'ok': True, 'skipped': True}
+            repeat = select_consistency_unit(conn, pid, phase, units)
+            if repeat is None:
+                return {'ok': True, 'skipped': True}
+            units.insert(units.index(unit), repeat)
+            conn.execute('UPDATE study_controls SET units=? WHERE prolific_id=? AND phase=?',
+                         (json.dumps(units), pid, phase))
+            unit = repeat
         if not unit or key!=unit['key']:
             # A refresh or second tab can request a completed unit; do not auto-invalidate it.
             raise ControlError('The trial order has changed. Reload the page to resume.', 'order_mismatch')
@@ -219,6 +261,7 @@ def begin(data):
             row=conn.execute('SELECT * FROM trial_permissions WHERE prolific_id=? AND phase=? AND trial_key=?',(pid,phase,key)).fetchone()
         result={'ok':True,'trial_key':key,'ticket':row['ticket'],'minimum_seconds':unit['minimum']}
         if unit['section']=='attention':result['attention']=public_audio_check(unit,row['audio_token'])
+        if unit['section']=='consistency':result['stimulus']=unit['stimulus']
     return result
 
 
@@ -236,7 +279,7 @@ def validate_payload(data,unit,phase):
         if key in expected and p.get(key)!=expected[key]:
             raise ControlError('Sound metadata does not match the assigned trial.','stimulus_mismatch',422)
     section=unit['section']
-    if section in ('training','test'):
+    if section in ('training','test','consistency'):
         keys=[q['key'] for q in unit['questions'] if q['key']!='audibilite_son']
         if phase == 'phase3' and (p.get('questionnaire_version') == '2026-11-11' or 'shoe_type' not in keys):
             # Existing sessions can have the previous four questions frozen in their units.
