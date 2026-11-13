@@ -2343,12 +2343,12 @@ function buildIntensityPreview() {
   );
   const expandedAudio = levels.map((pk, index) => index === levels.length - 1
     ? audio[index]
-    : `/static/stimulis/calibration/turchet_preview_pk_expanded_${pk}.wav`
+    : `/static/stimulis/calibration/turchet_preview_pk_2x_${pk}.wav`
   );
   const sweeps = [
     { label: 'Current WAV levels', paths: audio },
     { label: 'PK-matched WAV levels', paths: matchedAudio },
-    { label: 'Expanded PK spacing (1.2×)', paths: expandedAudio },
+    { label: 'Expanded PK spacing (2×)', paths: expandedAudio },
   ];
   return [
     { type: jsPsychPreload, audio: [...new Set([...audio, ...matchedAudio, ...expandedAudio])] },
