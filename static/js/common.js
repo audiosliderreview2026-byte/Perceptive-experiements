@@ -2458,7 +2458,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
     }
     if (phase === 'phase2' && window.PROLIFIC_ID === 'edit-intensity') {
       window.STUDY_COMPLETION_PREVIEW = true;
-      const pairs = await fetchExperimentJson('/static/stimulis/calibration/edit_intensity_preview.json?v=2');
+      const pairs = await fetchExperimentJson('/static/stimulis/calibration/edit_intensity_preview.json?v=3');
       await jsPsych.run(buildEditIntensityPreview(pairs));
       return;
     }

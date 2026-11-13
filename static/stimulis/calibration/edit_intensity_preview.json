@@ -34,5 +34,32 @@
     "peak": 6.99,
     "rms": 6.9,
     "alpha": 2.560602
+  },
+  {
+    "category": "Plugin",
+    "original": "/static/stimulis/segments_5s/test_plugin_originals/wood__second_5-10s.wav",
+    "edit": "/static/stimulis/segments_5s/test_plugin_edits/wood__edit_20__alpha_p5p377795__second_5-10s.wav",
+    "matched": "/static/stimulis/calibration/edit_intensity_rms_matched_05.wav",
+    "peak": 0.8,
+    "alpha": 5.377795,
+    "rms": 0.74
+  },
+  {
+    "category": "Separated YouTube",
+    "original": "/static/stimulis/segments_5s/test_yt_originals_separated/clip_04_6m24s_residual__first_0-5s.wav",
+    "edit": "/static/stimulis/segments_5s/test_yt_edits/clip_04_6m24s_residual__edit_11__alpha_p5p374247__first_0-5s.wav",
+    "matched": "/static/stimulis/calibration/edit_intensity_rms_matched_06.wav",
+    "peak": 5.78,
+    "alpha": 5.374247,
+    "rms": 4.36
+  },
+  {
+    "category": "Separated YouTube",
+    "original": "/static/stimulis/segments_5s/test_yt_originals_separated/clip_12_45m00s_target__first_0-5s.wav",
+    "edit": "/static/stimulis/segments_5s/test_yt_edits/clip_12_45m00s_target__edit_20__alpha_p3p565245__first_0-5s.wav",
+    "matched": "/static/stimulis/calibration/edit_intensity_rms_matched_07.wav",
+    "peak": 12.84,
+    "alpha": 3.565245,
+    "rms": 14.44
   }
 ]
