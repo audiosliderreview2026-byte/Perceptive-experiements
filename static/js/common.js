@@ -2337,16 +2337,13 @@ function intensitySweeps({ name, source, levels, previewPrefix }) {
   const audio = levels.map(pk =>
     `/static/stimulis/segments_5s/Turchet_baseline/${source}__PK_${pk}dB__first_0-5s.wav`
   );
-  const previewAudio = variant => levels.map((pk, index) => index === levels.length - 1
+  const matchedAudio = levels.map((pk, index) => index === levels.length - 1
     ? audio[index]
-    : `/static/stimulis/calibration/turchet_preview_${previewPrefix}pk_${variant}_${pk}.wav`
+    : `/static/stimulis/calibration/turchet_preview_${previewPrefix}pk_matched_${pk}.wav`
   );
   return [
     { label: 'Original WAV levels', paths: audio },
-    { label: 'PK-matched WAV levels', paths: previewAudio('matched') },
-    { label: 'Production PK spacing (1.2×)', paths: audio.map(path =>
-      path.replace('/Turchet_baseline/', '/Turchet_baseline_pk1p2_v1/')) },
-    { label: 'Expanded PK spacing (2×)', paths: previewAudio('2x') },
+    { label: 'PK-matched WAV levels', paths: matchedAudio },
   ].map(sweep => ({ ...sweep, name, levels }));
 }
 
@@ -2369,7 +2366,7 @@ function buildIntensityPreview() {
     { type: jsPsychPreload, audio: [...new Set(sweeps.flatMap(sweep => sweep.paths))] },
     {
       type: jsPsychHtmlButtonResponse,
-      stimulus: '<div class="screen"><h2>Turchet intensity preview</h2><p>Listen to dress shoes on metal, followed by sneakers on gravel. Each example has four sets in ascending PK order, all ending with the same loudest clip for that example. Keep your device volume fixed throughout.</p></div>',
+      stimulus: '<div class="screen"><h2>Turchet intensity preview</h2><p>Listen to dress shoes on metal, followed by sneakers on gravel. Each example has two sets in ascending PK order. Both sets for an example end with the same loudest clip. Keep your device volume fixed throughout.</p></div>',
       choices: ['Start listening'],
     },
     ...sweeps.flatMap(({ label, paths, name, levels }, sweep) => paths.map((audioPath, index) => buildListenTrial({

@@ -15,6 +15,19 @@ The generator applies that gain uniformly to the waveform. This keeps each clip�
 
 New sessions use the versioned WAVs whenever they are assigned a Turchet grid stimulus. The app records the actual playback path in the result. Previously registered sessions use their saved stimuli and historical results keep their original paths. Original reference clips and other editing methods retain their existing levels.
 
+## Exact PK matching in the preview
+
+Exact matching uses a factor of 1.0. It maps the **difference** between two filename PK settings to the same difference in **measured whole-clip RMS**. This lets the filename specify the spacing while the loudest WAV sets the absolute digital level.
+
+For dress shoes on metal, the highest setting is PK 81.40 dB and its WAV measures −23.33 dBFS RMS. Take the next setting down, PK 72.99 dB.
+
+1. The PK gap is 81.40 − 72.99 = 8.41 dB.
+2. The target RMS is −23.33 − 8.41 = −31.74 dBFS.
+3. The existing WAV measures −24.28 dBFS RMS, so the required gain is −31.74 − (−24.28) = −7.46 dB.
+4. Convert that gain to a sample multiplier using `10^(gain / 20)`. Here that gives about 0.424. Multiply every sample in the WAV by 0.424 and write the result.
+
+Peak level and RMS both decrease by 7.46 dB for this clip. The matching criterion is the RMS gap between WAVs. Each example in the preview plays the original sweep and the exact PK-matched sweep.
+
 ## Build and use the retest
 
 Run `python turchet_levels.py` from the application directory after deploying the code and before reloading the web app. The generator reads the deployed original WAVs and creates a separate versioned directory. It verifies each adjusted RMS level. Allow approximately 324 MiB of disk space for the generated WAVs.
