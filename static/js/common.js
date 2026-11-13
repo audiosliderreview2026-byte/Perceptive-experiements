@@ -2333,40 +2333,49 @@ function prolificStudyMetadata() {
     SESSION_ID: params.get('SESSION_ID') || null };
 }
 
-function buildIntensityPreview() {
-  // Keep the source, step interval and excerpt fixed while changing PK.
-  const levels = ['56.17', '64.58', '72.99', '81.40'];
+function intensitySweeps({ name, source, levels, previewPrefix }) {
   const audio = levels.map(pk =>
-    `/static/stimulis/segments_5s/Turchet_baseline/dress_metal_neutral_0241__H2H_518.76ms__PK_${pk}dB__first_0-5s.wav`
+    `/static/stimulis/segments_5s/Turchet_baseline/${source}__PK_${pk}dB__first_0-5s.wav`
   );
-  // Anchor both sweeps to the same highest-PK WAV. The preview variants
-  // attenuate the lower settings so the RMS difference equals the PK difference.
-  const matchedAudio = levels.map((pk, index) => index === levels.length - 1
+  const previewAudio = variant => levels.map((pk, index) => index === levels.length - 1
     ? audio[index]
-    : `/static/stimulis/calibration/turchet_preview_pk_matched_${pk}.wav`
+    : `/static/stimulis/calibration/turchet_preview_${previewPrefix}pk_${variant}_${pk}.wav`
   );
-  const expandedAudio = levels.map((pk, index) => index === levels.length - 1
-    ? audio[index]
-    : `/static/stimulis/calibration/turchet_preview_pk_2x_${pk}.wav`
-  );
-  const productionAudio = audio.map(path => path.replace('/Turchet_baseline/', '/Turchet_baseline_pk1p2_v1/'));
-  const sweeps = [
+  return [
     { label: 'Original WAV levels', paths: audio },
-    { label: 'PK-matched WAV levels', paths: matchedAudio },
-    { label: 'Production PK spacing (1.2×)', paths: productionAudio },
-    { label: 'Expanded PK spacing (2×)', paths: expandedAudio },
+    { label: 'PK-matched WAV levels', paths: previewAudio('matched') },
+    { label: 'Production PK spacing (1.2×)', paths: audio.map(path =>
+      path.replace('/Turchet_baseline/', '/Turchet_baseline_pk1p2_v1/')) },
+    { label: 'Expanded PK spacing (2×)', paths: previewAudio('2x') },
+  ].map(sweep => ({ ...sweep, name, levels }));
+}
+
+function buildIntensityPreview() {
+  const sweeps = [
+    ...intensitySweeps({
+      name: 'Dress shoes on metal',
+      source: 'dress_metal_neutral_0241__H2H_518.76ms',
+      levels: ['56.17', '64.58', '72.99', '81.40'],
+      previewPrefix: '',
+    }),
+    ...intensitySweeps({
+      name: 'Sneakers on gravel',
+      source: 'sneakers_gravel_neutral_0018__H2H_1026.97ms',
+      levels: ['61.71', '69.58', '77.45', '85.32'],
+      previewPrefix: 'gravel_',
+    }),
   ];
   return [
     { type: jsPsychPreload, audio: [...new Set(sweeps.flatMap(sweep => sweep.paths))] },
     {
       type: jsPsychHtmlButtonResponse,
-      stimulus: '<div class="screen"><h2>Turchet intensity preview</h2><p>Listen to four sets of four clips in ascending PK order. Every set ends with the same clip. Keep your device volume fixed throughout.</p></div>',
+      stimulus: '<div class="screen"><h2>Turchet intensity preview</h2><p>Listen to dress shoes on metal, followed by sneakers on gravel. Each example has four sets in ascending PK order, all ending with the same loudest clip for that example. Keep your device volume fixed throughout.</p></div>',
       choices: ['Start listening'],
     },
-    ...sweeps.flatMap(({ label, paths }, sweep) => paths.map((audioPath, index) => buildListenTrial({
+    ...sweeps.flatMap(({ label, paths, name, levels }, sweep) => paths.map((audioPath, index) => buildListenTrial({
       audioPath,
       choices: [index < paths.length - 1 ? 'Next sound' : sweep < sweeps.length - 1 ? 'Start next set' : 'Finish preview'],
-      prompt: `<div class="screen"><h2>${label}</h2><p>Sound ${index + 1} / ${paths.length} · PK ${levels[index]} dB</p></div>`,
+      prompt: `<div class="screen"><h2>${name}</h2><p>${label}</p><p>Sound ${index + 1} / ${paths.length} · PK ${levels[index]} dB</p></div>`,
       data: { step: 'intensity_preview' },
     }))),
   ];
