@@ -12,6 +12,7 @@ from pathlib import Path
 
 import model
 import persistence
+import rms_levels
 import turchet_levels
 
 ROOT = Path(__file__).resolve().parent
@@ -134,7 +135,7 @@ def find_attention_audio(token):
     raise ControlError('Audio link unavailable. Reload the study page.','audio_unavailable',404)
 
 
-def make_units(plan):
+def make_units(plan, *, match_levels=False):
     phase=plan['phase']
     manifest=json.loads((ROOT/'static/stimulis/training/manifest.json').read_text())
     questions=json.loads((ROOT/f'static/js/questions_{phase}.json').read_text())
@@ -145,7 +146,8 @@ def make_units(plan):
         units.append({'key':f"{section}|{trial['trialIndex']}|ratings",'section':section,
                       'index':trial['trialIndex'],'minimum':sum(duration(p) for p in paths),
                       'stimulus':trial,'questions':questions})
-    for trial in turchet_levels.versioned_stimulus(manifest[phase]): rating(trial,'training')
+    training = rms_levels.versioned_stimulus(manifest[phase]) if match_levels else manifest[phase]
+    for trial in training: rating(trial, 'training')
     checks=attention_schedule(phase,plan['userID'],len(plan['test'])); emitted=set()
     for trial in plan['test']:
         for check in checks:
@@ -163,7 +165,8 @@ def register(pid, phase, plan, *, saved_plan=False):
     with model.get_connection() as conn:
         row=conn.execute('SELECT token FROM study_controls WHERE prolific_id=? AND phase=?',(pid,phase)).fetchone()
     if not row:
-        units=make_units(plan if saved_plan else turchet_levels.versioned_stimulus(plan))
+        units = make_units(plan if saved_plan else rms_levels.versioned_stimulus(plan),
+                           match_levels=not saved_plan)
         with model.get_connection() as conn:
             conn.execute('INSERT OR IGNORE INTO study_controls(prolific_id,phase,token,units) VALUES (?,?,?,?)',
                          (pid,phase,secrets.token_urlsafe(32),json.dumps(units)))
@@ -204,8 +207,8 @@ def register_turchet_retest(plan):
             token = control['turchet_retest_token']
         else:
             session = conn.execute('SELECT trial_order FROM phase_sessions WHERE prolific_id=? AND phase=?', (pid, phase)).fetchone()
-            normal_plan = json.loads(session[0]) if session else turchet_levels.versioned_stimulus(plan)
-            units = make_units(normal_plan)
+            normal_plan = json.loads(session[0]) if session else rms_levels.versioned_stimulus(plan)
+            units = make_units(normal_plan, match_levels=session is None)
             token = None
             conn.execute('INSERT INTO study_controls(prolific_id,phase,token,units) VALUES (?,?,?,?)',
                          (pid, phase, secrets.token_urlsafe(32), json.dumps(units)))

@@ -139,13 +139,14 @@ def set_validity(prolific_id, phase, valid):
 def describe_sound(path, role=None):
     if not isinstance(path,str): return None
     played_path=path
+    path = path.replace('/static/stimulis/rms_matched_v1/', '/static/stimulis/', 1)
     source_map=Path(__file__).parent/'static/stimulis/training/sources.json'
     if '/training/' in path and source_map.exists():
         path=json.loads(source_map.read_text()).get(path,path)
     alpha=re.search(r'__alpha_([mp])(\d+)[pd](\d+)',path,re.I)
     value=(-1 if alpha[1].lower()=='m' else 1)*float(alpha[2]+'.'+alpha[3]) if alpha else None
     category=('youtube_background' if 'yt_edit+residual' in path or 'test_yt_originals/' in path else
-              'youtube_isolated' if 'test_yt_' in path else 'turchet' if 'Turchet_baseline' in path else
+              'youtube_isolated' if 'test_yt_' in path else 'turchet' if '/Turchet_baseline' in path else
               'plugin_shared' if 'turchet_centers' in path else 'plugin' if 'plugin' in path else 'training' if '/training/' in path else 'calibration')
     return {'audio_path':played_path,'source_audio_path':path,'role':role,'category':category,'alpha':value,
             'edited':bool(alpha or '__H2H_' in path),

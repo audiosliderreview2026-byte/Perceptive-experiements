@@ -1,0 +1,9 @@
+# Study playback levels
+
+New sessions use the same level policy in all three phases. For each five-second source excerpt, the original and its edits share an RMS target. Separated YouTube edits use the separated original. Edits with residuals use the complete original. Plugin edits of Turchet grid centers use the corresponding center original. Practice clips use the same source targets when a source is available. The silence practice example stays silent.
+
+We measure RMS after removing the constant offset from each channel, since that offset contributes energy without representing audible content. We start with the original excerpt's RMS and bring it into a nominal 14 dB range. The top of that range is 8 dB below the quietest of the first three calibration WAVs as measured by the same method. This leaves room between the typical study levels and the loud calibration examples. If any file in a source group would exceed −1 dBFS peak at that RMS, we lower the target for the entire group. Near-silent clips below −80 dBFS after offset removal are left at their quiet level. These bounds control digital level. Actual audibility still depends on the signal, the listener, and their equipment.
+
+The Turchet baseline grid keeps its separate 1.2× PK spacing, with each group's loudest WAV as its reference. Calibration, the stereo and attention checks, and the intensity previews keep their own assets. Earlier sessions retain the audio paths recorded at registration. The generated directory includes a level manifest with the source, reference, measured RMS and gain for each WAV.
+
+Run `python rms_levels.py` from the deployed application directory before reloading the web app. It generates versioned files locally from the existing WAVs. Keep the original WAVs for historical sessions and preview comparisons.
