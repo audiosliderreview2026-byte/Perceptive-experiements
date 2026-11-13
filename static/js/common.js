@@ -2440,7 +2440,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
         <li>Make sure you are on a computer or laptop (not a smartphone) and in a quiet place.</li>
         <li>Make sure you won't be disturbed for the duration of the experiment (tell the people around you that you should not be disturbed, close all other applications on your device, put you phone away and in "do not disturb" mode, etc.)</li>
         <li>Put this browser window in <strong>full screen</strong>.</li></ul>
-        <p>The study has three stages: <strong>calibration → practice → main study</strong>. It should last about <strong>${phase === 'phase1' ? '1 hour' : '1 hour'}</strong>, with a 2-minute pause every ${phase === 'phase1' ? '15–20' : '10–15'} minutes.</p>
+        <p>The study has three stages: <strong>calibration → practice → main study</strong>. It should last about <strong>${phase === 'phase2' ? '1h15' : '1h30'}</strong>, with a 2-minute break every 12 minutes of trials.</p>
         <p>For this study to yield valid scientific conclusions, we rely on you to carefully follow the instructions, listen attentively to the sounds and answer the questions honestly and thoughtfully. Various technical and attention checks have been included and we reserve the right to reject your submission should you fail too many of these checks.</p><p><strong>Use of AI is prohibited.</strong> We systematically check for AI-assisted/botted submissions and will reject them.</p><p>Thank you for your time and contribution to this study!</p></div>`,
         choices: ['Continue'] });
     }
@@ -2470,21 +2470,24 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
       on_timeline_start() { setStudyStage(`Practice ${plan.training.indexOf(trial) + 1} / ${plan.training.length}`); },
     })));
     if (training.length) timeline.push({ type: jsPsychHtmlButtonResponse,
-      stimulus: `<div class="screen"><h3>Practice complete</h3><p>You are now ready for the main study. There are ${plan.test.length} trials, with breaks planned every 10-15min.</p></div>`, choices: ['Start the study'], on_load() { setStudyStage(null); } });
+      stimulus: `<div class="screen"><h3>Practice complete</h3><p>You are now ready for the main study. There are ${plan.test.length} trials, with a 2-minute break every 12 minutes of trials.</p></div>`, choices: ['Start the study'], on_load() { setStudyStage(null); } });
 
-    const breaks = plan.procedure?.break_after || [];
-    const seenBreaks = new Set();
+    const breakClockKey = `study-trial-time:${window.PROLIFIC_ID}:${phase}`;
+    let trialTimeSinceBreak = Number(localStorage.getItem(breakClockKey)) || 0;
+    const breakIntervalMs = 12 * 60 * 1000;
     const catches = attentionCheckSchedule(phase, userID, plan.test.length);
     const emittedCatches = new Set();
     for (const trial of remaining) {
-      // Boundaries count experimental trials, regardless of extra timeline nodes.
-      // A resumed session gets only the most recent crossed boundary, not a series of missed breaks.
-      const boundary = breaks.filter(value => value <= trial.trialIndex).at(-1);
-      if (boundary !== undefined && !seenBreaks.has(boundary)) {
-        const laterAlreadyDone = plan.test.some(t => t.trialIndex >= boundary && isDone(t, 'test'));
-        if (!laterAlreadyDone) timeline.push(buildBreakScreen());
-        seenBreaks.add(boundary);
-      }
+      timeline.push({
+        timeline: [{
+          ...buildBreakScreen(),
+          on_finish() {
+            trialTimeSinceBreak = 0;
+            localStorage.removeItem(breakClockKey);
+          },
+        }],
+        conditional_function: () => trialTimeSinceBreak >= breakIntervalMs,
+      });
       // Insert due, unfinished checks, including one interrupted just before a refresh.
       for (const check of catches.filter(check => check.after <= trial.trialIndex)) {
         if (!emittedCatches.has(check.id) && !completed.has(`attention|${check.id}`)) {
@@ -2492,7 +2495,23 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
           emittedCatches.add(check.id);
         }
       }
-      timeline.push({ timeline: [buildStudyPermission(experimentalTrialKey('test', trial.trialIndex)), ...buildTrial(trial, questions, false)], on_timeline_start() { setStudyStage(null); } });
+      let trialStartedAt;
+      timeline.push({
+        timeline: [
+          buildStudyPermission(experimentalTrialKey('test', trial.trialIndex)),
+          {
+            timeline: buildTrial(trial, questions, false),
+            on_timeline_start() {
+              setStudyStage(null);
+              trialStartedAt = performance.now();
+            },
+            on_timeline_finish() {
+              trialTimeSinceBreak += performance.now() - trialStartedAt;
+              localStorage.setItem(breakClockKey, String(trialTimeSinceBreak));
+            },
+          },
+        ],
+      });
     }
     for (const check of catches) {
       if (!emittedCatches.has(check.id) && !completed.has(`attention|${check.id}`)) {
@@ -2880,7 +2899,7 @@ function buildStudyPermission(trialKey) {
 
 function buildBreakScreen() {
   return { type: jsPsychHtmlButtonResponse,
-          stimulus: `<div class="screen"><h3>Time for a break</h3><p>You may rest for two minutes. Continue whenever you are ready.</p><p>Before continuing, put both earphones back in place, check that your surroundings are quiet, and return your attention to the recordings. Keep the calibrated volume unchanged.</p></div>`, choices: ['Continue when ready'] };
+          stimulus: `<div class="screen"><h3>Time for a break</h3><p>Take a 2-minute break. Continue when you are ready.</p><p>Before continuing, put both earphones back in place, check that your surroundings are quiet, and return your attention to the recordings. Keep the calibrated volume unchanged.</p></div>`, choices: ['Continue when ready'] };
 }
 
 
