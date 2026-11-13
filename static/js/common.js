@@ -2364,9 +2364,12 @@ function buildIntensityPreview() {
 async function runAssignedExperiment(jsPsych, phase, buildTrial) {
   try {
     const params = new URLSearchParams(window.location.search);
-    const prolificID = params.get('prolificID') || params.get('PROLIFIC_PID');
-    if (!prolificID?.trim()) throw new Error('Add a non-empty prolificID to the URL.');
-    window.PROLIFIC_ID = prolificID.trim();
+    const prolificID = [...params]
+      .find(([key, value]) => ['prolificid', 'prolific_pid'].includes(key.toLowerCase()) && value.trim())?.[1].trim();
+    if (!prolificID) {
+      throw new Error(`The URL is missing a Prolific ID. Open the full study link (for example, /${phase}?prolificID=YOUR_ID).`);
+    }
+    window.PROLIFIC_ID = prolificID;
     if (phase === 'phase2' && window.PROLIFIC_ID === 'intensity') {
       window.STUDY_COMPLETION_PREVIEW = true;
       await jsPsych.run(buildIntensityPreview());

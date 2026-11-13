@@ -69,8 +69,7 @@ def begin_trial():
 
 @app.get("/")
 def home():
-    prolificID=request.args['prolificID']
-    return render_template('phase1.html', prolificID=prolificID)
+    return phase1()
 
 
 @app.post('/send_answer')
