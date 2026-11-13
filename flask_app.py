@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, jsonify, url_for, send_file
+from flask import Flask, g, request, render_template, jsonify, url_for, send_file
 from pathlib import Path
 import model
 import json
@@ -50,7 +50,8 @@ def protect_study_endpoints():
     with model.get_connection() as conn:
         token = request.headers.get('X-Study-Token') or data.get('session_token')
         control = study_control.authenticate(conn, data.get('prolificID'), data.get('phase'), token)
-        if study_control.is_turchet_retest(control, token) and request.path not in ('/api/trial/begin', '/api/save-trial'):
+        g.turchet_retest = study_control.is_turchet_retest(control, token)
+        if g.turchet_retest and request.path not in ('/api/trial/begin', '/api/save-trial', '/api/event'):
             raise study_control.ControlError('Use the Turchet retest entry point.', 'invalid_request', 403)
 
 @app.post('/api/attention/preview')
@@ -391,6 +392,6 @@ def save_research_event():
         data=request.get_json() or {}
         if isinstance(data.get('payload'),dict):
             data['payload']={**data['payload'],'record_kind':'client_screen','server_verified':False}
-        return jsonify(persistence.save_event(data))
+        return jsonify(persistence.save_event(data, turchet_retest=g.turchet_retest))
     except (ValueError,KeyError,TypeError) as exc:
         return jsonify(error=str(exc)),400

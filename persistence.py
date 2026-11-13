@@ -171,8 +171,12 @@ def stimuli(payload):
     return result
 
 
-def save_event(data):
-    participant=assign(data.get('prolificID'), data.get('phase'))
+def save_event(data, *, turchet_retest=False):
+    if turchet_retest:
+        # The request hook authenticated the dedicated Phase 2 retest token.
+        participant = {'prolificID': data['prolificID'], 'userID': '1'}
+    else:
+        participant = assign(data.get('prolificID'), data.get('phase'))
     if str(data.get('userID'))!=participant['userID']:raise ValueError('USER ID does not match database assignment')
     if data.get('phase') not in ('phase1','phase2','phase3'):raise ValueError('Invalid phase')
     uuid.UUID(data['event_id'])
@@ -182,6 +186,8 @@ def save_event(data):
     section='feedback' if step=='feedback' else 'attention' if step=='attention' else 'training' if payload.get('training') else 'calibration' if str(step).startswith('calibration') or payload.get('calibration_test') else 'test' if step in ('ratings','audibility','listen','listenA','listenB') else 'screen'
     if payload.get('repeatOfTrialKey'):
         section = 'consistency'
+    if turchet_retest:
+        section = 'turchet_retest'
     with model.get_connection() as conn:
         conn.execute('INSERT OR IGNORE INTO research_events(event_id,prolific_id,user_id,phase,section,trial_index,client_time,payload,stimuli) VALUES (?,?,?,?,?,?,?,?,?)',
           (data['event_id'],participant['prolificID'],int(participant['userID']),data['phase'],section,payload.get('trialIndex'),data.get('client_time'),json.dumps(payload),json.dumps(stimuli(payload))))
