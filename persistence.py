@@ -180,6 +180,8 @@ def save_event(data):
     if not isinstance(payload,dict):raise ValueError('payload must be an object')
     step=payload.get('step','screen')
     section='feedback' if step=='feedback' else 'attention' if step=='attention' else 'training' if payload.get('training') else 'calibration' if str(step).startswith('calibration') or payload.get('calibration_test') else 'test' if step in ('ratings','audibility','listen','listenA','listenB') else 'screen'
+    if payload.get('repeatOfTrialKey'):
+        section = 'consistency'
     with model.get_connection() as conn:
         conn.execute('INSERT OR IGNORE INTO research_events(event_id,prolific_id,user_id,phase,section,trial_index,client_time,payload,stimuli) VALUES (?,?,?,?,?,?,?,?,?)',
           (data['event_id'],participant['prolificID'],int(participant['userID']),data['phase'],section,payload.get('trialIndex'),data.get('client_time'),json.dumps(payload),json.dumps(stimuli(payload))))
