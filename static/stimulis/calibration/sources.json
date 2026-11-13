@@ -16,9 +16,15 @@
     "selection": "Lowest nonzero RMS among first excerpts with alpha between -8.5 and -7.5; no gain adjustment."
   },
   "calibration_order": [
-    "/static/stimulis/calibration/pink_noise.wav",
-    "/static/stimulis/training/phase1/02_sound.wav",
+    "/static/stimulis/segments_5s/test_plugin_edits/wood__edit_24__alpha_m73p762776__second_5-10s.wav",
+    "/static/stimulis/segments_5s/test_yt_edits/clip_10_10m03s_residual__edit_26__alpha_p41p685126__second_5-10s.wav",
     "/static/stimulis/calibration/extreme_negative.wav",
-    "/static/stimulis/calibration/quiet_alpha_minus8.wav"
+    "/static/stimulis/segments_5s/test_yt_originals_separated/clip_08_7m10s_residual__first_0-5s.wav"
+  ],
+  "calibration_rms_dbfs": [
+    -13.99,
+    -8.19,
+    -10.29,
+    -51.18
   ]
 }

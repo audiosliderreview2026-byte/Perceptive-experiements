@@ -1313,7 +1313,11 @@ function makeJsPsych(
       async on_finish() {
         if (window.STUDY_COMPLETION_PREVIEW) {
           finished = true;
-          renderStudyCompletion(jsPsych.getDisplayElement());
+          if (window.EXPERIMENT_PHASE === 'phase2' && window.PROLIFIC_ID === 'intensity') {
+            jsPsych.getDisplayElement().innerHTML = '<div class="screen"><h2>Intensity preview complete</h2><p>Refresh this page to listen again.</p></div>';
+          } else {
+            renderStudyCompletion(jsPsych.getDisplayElement());
+          }
           return;
         }
         await waitForStudySaves();
@@ -1381,6 +1385,7 @@ function buildListenTrial({
     type:
       jsPsychAudioButtonResponse,
 
+    // Pass the original WAV to the player at its native level.
     stimulus:
       audioPath,
 
@@ -1421,13 +1426,7 @@ function buildListenTrial({
 // calibration questions that have already been answered.
 // ==========================================================
 
-const CALIBRATION_AUDIO = [
-  '/static/stimulis/calibration/pink_noise.wav',
-  '/static/stimulis/training/phase1/02_sound.wav',
-  '/static/stimulis/calibration/extreme_negative.wav',
-  '/static/stimulis/calibration/quiet_alpha_minus8.wav',
-];
-function buildCalibrationTrials(completedKeys = new Set()) {
+function buildCalibrationTrials(completedKeys, calibrationAudio) {
   let replay = null;
   const stop = () => { if (replay) { replay.pause(); replay.currentTime = 0; replay = null; } };
   const save = (key, payload) => saveTrialToServer({
@@ -1439,12 +1438,12 @@ function buildCalibrationTrials(completedKeys = new Set()) {
     stimulus: `<div class="screen"><h2>Audio Calibration</h2>
       <p>As a reminder, you should wear <strong>headphones or earphones</strong> and be in a <strong>quiet environment</strong>.</p>
       <p>Listen to all four sounds below. Use your device volume control to find a <strong>comfortable listening level</strong> for all four.</p>
-      <p>While most sounds in the study feel nice or neutral, sound 2 and 3 may feel a little unpleasant. We included them here to make sure you select a sound level at which they do not sound too uncomfortable. At the same time, make sure that sound 4, which is quieter, remains clearly audible at the selected sound level. You may replay these sounds while adjusting your volume.</p>
-      <div class="calibration-samples">${CALIBRATION_AUDIO.map((path, i) => `<button type="button" class="jspsych-btn calibration-sample" data-index="${i}">▶ Play sound ${i + 1}</button>`).join('')}</div>
+      <p>The first three sounds are loud examples. Set your volume so they are comfortable, then check that you can still hear the quieter fourth sound at that same setting. You may replay these sounds while adjusting your volume.</p>
+      <div class="calibration-samples">${calibrationAudio.map((path, i) => `<button type="button" class="jspsych-btn calibration-sample" data-index="${i}">▶ Play sound ${i + 1}</button>`).join('')}</div>
       <p id="calibration-play-status" role="status">Listen to each sound before answering.</p>
       <p><strong>How would you describe the current volume?</strong></p></div>`,
     choices: ['Too quiet', 'Comfortable', 'Too loud'],
-    data: { step: 'calibration', calibration_test: 'volume', audio_paths: CALIBRATION_AUDIO, instructions_version: '2026-11-10' },
+    data: { step: 'calibration', calibration_test: 'volume', audio_paths: calibrationAudio, instructions_version: '2026-11-13' },
     on_load() {
       setStudyStage('Calibration 1 / 2');
       const heard = new Set();
@@ -1458,7 +1457,8 @@ function buildCalibrationTrials(completedKeys = new Set()) {
         plays.forEach(item => item.disabled = true);
         answers.forEach(item => item.disabled = true);
         status.textContent = `Playing sound ${index + 1}…`;
-        const audio = replay = new Audio(CALIBRATION_AUDIO[index]);
+        const audio = replay = new Audio(calibrationAudio[index]);
+        audio.volume = 1;
         const failed = () => {
           stop(); plays.forEach(item => item.disabled = false);
           status.textContent = 'Audio could not play. Please try again.';
@@ -1468,8 +1468,8 @@ function buildCalibrationTrials(completedKeys = new Set()) {
           heard.add(index); replay = null;
           button.textContent = `↻ Replay sound ${index + 1} ✓`;
           plays.forEach(item => item.disabled = false);
-          answers.forEach(item => item.disabled = heard.size !== CALIBRATION_AUDIO.length);
-          status.textContent = heard.size === CALIBRATION_AUDIO.length ? 'All four sounds played. You may answer or replay a sound.' : `${heard.size} / ${CALIBRATION_AUDIO.length} sounds played.`;
+          answers.forEach(item => item.disabled = heard.size !== calibrationAudio.length);
+          status.textContent = heard.size === calibrationAudio.length ? 'All four sounds played. You may answer or replay a sound.' : `${heard.size} / ${calibrationAudio.length} sounds played.`;
         }, { once: true });
         audio.play().catch(failed);
       }));
@@ -2329,12 +2329,39 @@ function prolificStudyMetadata() {
     SESSION_ID: params.get('SESSION_ID') || null };
 }
 
+function buildIntensityPreview() {
+  // Keep the source, step interval and excerpt fixed while changing PK.
+  const levels = ['56.17', '64.58', '72.99', '81.40'];
+  const audio = levels.map(pk =>
+    `/static/stimulis/segments_5s/Turchet_baseline/dress_metal_neutral_0241__H2H_518.76ms__PK_${pk}dB__first_0-5s.wav`
+  );
+  return [
+    { type: jsPsychPreload, audio },
+    {
+      type: jsPsychHtmlButtonResponse,
+      stimulus: '<div class="screen"><h2>Turchet intensity preview</h2><p>You will hear four versions of the same footsteps from lowest to highest PK. Keep your current listening volume fixed.</p></div>',
+      choices: ['Start listening'],
+    },
+    ...audio.map((audioPath, index) => buildListenTrial({
+      audioPath,
+      choices: [index === audio.length - 1 ? 'Finish preview' : 'Next sound'],
+      prompt: `<div class="screen"><h2>Sound ${index + 1} / ${audio.length}</h2><p>PK ${levels[index]} dB</p></div>`,
+      data: { step: 'intensity_preview' },
+    })),
+  ];
+}
+
 async function runAssignedExperiment(jsPsych, phase, buildTrial) {
   try {
     const params = new URLSearchParams(window.location.search);
     const prolificID = params.get('prolificID') || params.get('PROLIFIC_PID');
     if (!prolificID?.trim()) throw new Error('Add a non-empty prolificID to the URL.');
     window.PROLIFIC_ID = prolificID.trim();
+    if (phase === 'phase2' && window.PROLIFIC_ID === 'intensity') {
+      window.STUDY_COMPLETION_PREVIEW = true;
+      await jsPsych.run(buildIntensityPreview());
+      return;
+    }
     const attentionPreview = /^attention([1-5])$/.exec(window.PROLIFIC_ID);
     if (window.PROLIFIC_ID === 'last screen' || window.PROLIFIC_ID === 'break' || attentionPreview) {
       window.STUDY_COMPLETION_PREVIEW = true;
@@ -2414,7 +2441,8 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
 
     const audioPaths = [...training, ...remaining].flatMap(trial => phase === 'phase1'
       ? [trial.audioPath] : [trial.soundA.audioPath, trial.soundB.audioPath]);
-    if (!completed.has('calibration|volume')) audioPaths.push(...CALIBRATION_AUDIO);
+    const calibrationAudio = participant.calibration_audio;
+    if (!completed.has('calibration|volume')) audioPaths.push(...calibrationAudio);
     if (!completed.has('calibration|stereo')) audioPaths.push('/static/stimulis/calibration/left.wav', '/static/stimulis/calibration/right.wav');
     const timeline = [{
       type: jsPsychPreload, audio: [...new Set(audioPaths)], show_progress_bar: true,
@@ -2439,7 +2467,7 @@ async function runAssignedExperiment(jsPsych, phase, buildTrial) {
         <p>For this study to yield valid scientific conclusions, we rely on you to carefully follow the instructions, listen attentively to the sounds and answer the questions honestly and thoughtfully. Various technical and attention checks have been included and we reserve the right to reject your submission should you fail too many of these checks.</p><p><strong>Use of AI is prohibited.</strong> We systematically check for AI-assisted/botted submissions and will reject them.</p><p>Thank you for your time and contribution to this study!</p></div>`,
         choices: ['Continue'] });
     }
-    timeline.push(...buildCalibrationTrials(completed));
+    timeline.push(...buildCalibrationTrials(completed, calibrationAudio));
     if (training.length) timeline.push({ type: jsPsychHtmlButtonResponse,
       stimulus: phase === 'phase1' ? `<div class="screen"><h2>Practice</h2>
       <p>You will now complete <strong>${plan.training.length} trials</strong> to familiarize yourself with the task. At the beginning of each trial, you will listen to a <strong>5-second sound</strong>.</p>

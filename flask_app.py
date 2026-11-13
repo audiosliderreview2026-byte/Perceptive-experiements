@@ -363,7 +363,8 @@ def register_participant():
         participant=persistence.assign(data.get('prolificID'),data.get('phase'))
         plan=load_assigned_plan(participant['phase'],participant['userID'])
         participant['session_token']=study_control.register(participant['prolificID'],participant['phase'],plan)
-        participant['training']=study_control.fixed_training(participant['prolificID'],participant['phase'])
+        participant['calibration_audio'], participant['training'] = study_control.fixed_stimuli(
+            participant['prolificID'], participant['phase'])
         participant['control_version']=1
         return jsonify(participant)
     except ValueError as exc:

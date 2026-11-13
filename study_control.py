@@ -14,12 +14,7 @@ import model
 import persistence
 
 ROOT = Path(__file__).resolve().parent
-CALIBRATION_AUDIO = [
-    '/static/stimulis/calibration/pink_noise.wav',
-    '/static/stimulis/training/phase1/02_sound.wav',
-    '/static/stimulis/calibration/extreme_negative.wav',
-    '/static/stimulis/calibration/quiet_alpha_minus8.wav',
-]
+CALIBRATION_AUDIO = json.loads((ROOT / 'static/stimulis/calibration/sources.json').read_text())['calibration_order']
 PROTOCOL_STRIKES = 3
 ATTENTION_FAILURES = 3
 
@@ -172,10 +167,13 @@ def register(pid, phase, plan):
     return row['token']
 
 
-def fixed_training(pid, phase):
+def fixed_stimuli(pid, phase):
     with model.get_connection() as conn:
         row=conn.execute('SELECT units FROM study_controls WHERE prolific_id=? AND phase=?',(pid,phase)).fetchone()
-    return [unit['stimulus'] for unit in json.loads(row['units']) if unit['section']=='training']
+    units = json.loads(row['units'])
+    calibration = next(unit['audio_paths'] for unit in units if unit['key'] == 'calibration|volume')
+    training = [unit['stimulus'] for unit in units if unit['section'] == 'training']
+    return calibration, training
 
 
 def authenticate(conn, pid, phase, token):
